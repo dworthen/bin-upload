@@ -1,0 +1,28 @@
+{
+  "name": "@d-dev/bin-upload",
+  "version": "0.0.1",
+  "description": "Publish binaries to npm.",
+  "module": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "fix": "biome check --write",
+    "check": "biome check",
+    "build": "bun run ./scripts/build.ts",
+    "getVersion": "bun run scripts/getVersion.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.14",
+    "@types/archiver": "^7.0.0",
+    "@types/bun": "latest",
+    "concurrently": "^9.2.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "eta": "^4.5.1",
+    "meow": "^14.0.0",
+    "octokit": "^5.0.5"
+  }
+}

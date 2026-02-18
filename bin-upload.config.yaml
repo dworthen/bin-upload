@@ -1,0 +1,151 @@
+binaries:
+  # binaryId: path to binary file
+  linux-x64: "./bin/linux-x64/bin-upload"
+  linux-x64-musl: "./bin/linux-x64-musl/bin-upload"
+  linux-arm64: "./bin/linux-arm64/bin-upload"
+  linux-arm64-musl: "./bin/linux-arm64-musl/bin-upload"
+  win-x64: "./bin/win-x64/bin-upload.exe"
+  # win-arm64: "./bin/win-arm64/bin-upload.exe"
+  darwin-x64: "./bin/darwin-x64/bin-upload"
+  darwin-arm64: "./bin/darwin-arm64/bin-upload"
+pack:
+  # Run CLI command prior to packing the binaries.
+  prePackCommand: "bun run build"
+  dir: "./dist"
+  clearDir: true
+npm:
+  # readme and license files to include in the npm packages.
+  readmeFile: "README.md"
+  licenseFile: "LICENSE"
+  binaryPackages:
+    # A subset of binaryIds that should be published as separate packages on npm.
+    # binaryId: { os, arch }
+    # as defined by node's process.platform and process.arch
+    # https://nodejs.org/docs/latest-v24.x/api/process.html#processplatform
+    # https://nodejs.org/docs/latest-v24.x/api/process.html#processarch
+    # The os and arch values must match a valid combination of process.platform and process.arch.
+    # Therefore publishing musl linux binaries to npm is not possible since
+    # there is no way to differentiate them from glibc linux binaries using process.platform and process.arch.
+    linux-x64:
+      os: "linux"
+      arch: "x64"
+    linux-arm64:
+      os: "linux"
+      arch: "arm64"
+    win-x64:
+      os: "windows"
+      arch: "x64"
+    darwin-x64:
+      os: "darwin"
+      arch: "x64"
+    darwin-arm64:
+      os: "darwin"
+      arch: "arm64"
+  packageJson:
+    # packageJson values
+    # https://docs.npmjs.com/cli/v11/configuring-npm/package-json
+    # The name is the name of the primary npm package users install.
+    # The binary dependency packages are named using the pattern `\${name}-\${binaryId}`.
+    # For example, if the name is "bin-upload" and there is a binary with the binaryId "linux-x64",
+    # then the package for that binary will be named "bin-upload-linux-x64".
+    # and the primary package "bin-upload" will have a dependency on "bin-upload-linux-x64".
+    name: "@d-dev/bin-upload"
+    version: "0.0.1"
+    description: "Publish binaries to npm or pypi."
+    author: "Derek Worthen <worthend.derek@gmail.com>"
+    license: "MIT"
+    repository: "github:dworthen/bin-upload"
+    keywords:
+      - "bin-upload"
+      - "binary"
+      - "npm"
+      - "pypi"
+      - "publish"
+  # binaryNames:
+  #   - "bin-upload"
+  #   - "bu"
+  publish:
+    # Arguments to pass to `npm publish`
+    # https://docs.npmjs.com/cli/v11/commands/npm-publish
+    access: "public"
+    tag: "latest"
+    # Publishing with granular access token
+    # "//registry.npmjs.org/:_authToken": "${NPM_TOKEN}"
+    # may also set with CLI args e.g.,
+    # bin-upload publish -s "npm.publish.//registry.npmjs.org/:_authToken=some-token"
+pypi:
+  # readme file to include in the pypi package.
+  readmeFile: "README.md"
+  platformTags:
+    # A subset of binaryIds that should be published to pypi.
+    # binaryId: pypi platform tag
+    # The pypi platform tag must be a valid wheel platform tag.
+    # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/
+    linux-x64: "manylinux_2_17_x86_64"
+    linux-x64-musl: "musllinux_1_2_x86_64"
+    linux-arm64: "manylinux_2_17_aarch64"
+    linux-arm64-musl: "musllinux_1_2_aarch64"
+    win-x64: "win_amd64"
+    darwin-x64: "macosx_10_9_x86_64"
+    darwin-arm64: "macosx_11_0_arm64"
+  publish:
+    # Arguments to pass to `uv publish`
+    token: "\${PYPI_TOKEN}"
+  metadata:
+    # Metadata fields for the pypi package.
+    # https://packaging.python.org/en/latest/specifications/core-metadata/
+    Name: "bin-upload"
+    Version: "0.0.1"
+    Summary: "Publish binaries to npm or pypi."
+    Author: "Derek Worthen"
+    Author-Email: "worthend.derek@gmail.com"
+    License-Expression: "MIT"
+    Requires-Python: ">=3.11"
+    Project-URL: source, https://github.com/dworthen/bin-upload
+    keywords: "bin-upload,binary,pypi,npm,publish"
+  # entryPointNames:
+  #   - "bin-upload"
+  #   - "bu"
+github:
+  owner: "dworthen"
+  repo: "bin-upload"
+  token: "${GITHUB_TOKEN}"
+  release:
+    # Arguments to pass to gh release api
+    # https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#create-a-release
+    # if !tag_name -> use latest tag
+    # if !name -> use tag_name
+    # if !body -> use commit message of associated tag
+    # may also set with CLI args e.g.,
+    # bin-upload publish -s github.release.tag_name=v1.0.0 -s "github.release.body=Some description" ...
+    tag_name: "v1.0.0"
+    name: "v1.0.0"
+    body: "Release v1.0.0"
+  archives:
+    prefix: "bin-upload-"
+    formats:
+      # binaryId: archive format ("tar.gz" or "zip")
+      linux-x64: "tar.gz"
+      linux-x64-musl: "tar.gz"
+      linux-arm64: "tar.gz"
+      linux-arm64-musl: "tar.gz"
+      win-x64: "zip"
+      # win-arm64: "zip"
+      darwin-x64: "tar.gz"
+      darwin-arm64: "tar.gz"
+      source:
+        format: "tar.gz"
+        files:
+          - cwd: "."
+            pattern: "src/**/*"
+          - "README.md"
+          - "LICENSE"
+    extraFiles:
+      # A list of files or globs to include in each of the
+      # release archives.
+      - "README.md"
+      - "LICENSE"
+  files:
+    # A list of files or globs to include in the release on github.
+    - "README.md"
+    - "LICENSE"
