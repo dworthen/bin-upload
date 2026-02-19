@@ -1,4 +1,5 @@
-import { join } from 'node:path'
+import { resolve } from 'node:path'
+import { argv } from 'bun'
 
 const builds: Record<string, string> = {
   'bun-linux-arm64': 'bin/linux-arm64/bin-upload',
@@ -11,12 +12,13 @@ const builds: Record<string, string> = {
 }
 
 async function buildTarget(target: string, outFile: string): Promise<void> {
+  console.log(`Building for target: ${target}...`)
   await Bun.build({
     entrypoints: ['./src/index.ts'],
     compile: {
       // @ts-expect-error
       target,
-      outfile: join(process.cwd(), outFile),
+      outfile: resolve(outFile),
       autoloadTsConfig: false,
       autoloadPackageJson: false,
       autoloadBunConfig: false,
@@ -26,10 +28,16 @@ async function buildTarget(target: string, outFile: string): Promise<void> {
     sourcemap: 'linked',
     env: 'disable',
   })
+  console.log(`Built ${target} successfully! Output: ${outFile}`)
 }
 
-await Promise.all(
-  Object.entries(builds).map(
-    async ([target, outFile]) => await buildTarget(target, outFile),
-  ),
-)
+const target = argv[2]
+if (target && builds[target]) {
+  await buildTarget(target, builds[target])
+} else {
+  await Promise.all(
+    Object.entries(builds).map(
+      async ([target, outFile]) => await buildTarget(target, outFile),
+    ),
+  )
+}

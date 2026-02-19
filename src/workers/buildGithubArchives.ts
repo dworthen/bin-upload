@@ -79,7 +79,7 @@ async function copyFiles(outputDir: string, config: Config): Promise<void> {
 
     await Promise.all(
       files.map(async (file) => {
-        const input = Bun.file(file.fullPath)
+        const input = await readFile(file.fullPath)
         const outputPath = join(outputDir, file.relativePath)
         const dir = dirname(outputPath)
         await mkdir(dir, { recursive: true })
@@ -132,6 +132,7 @@ self.addEventListener(
         type: 'error',
         message: `Error building GitHub archive ${archiveName}: ${error}`,
       })
+      process.exit(1)
     }
   },
 )

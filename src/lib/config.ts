@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { resolve } from 'node:path'
 import { mergeObjs } from '@/lib//mergeObjs'
 import { setArrayToObject } from '@/lib/setArrayToObject'
 import { replaceEnvVars } from '@/lib/strings'
@@ -191,7 +191,7 @@ async function validateConfig(config: Config): Promise<void> {
         )
         process.exit(1)
       }
-      const file = Bun.file(join(process.cwd(), config.npm.readmeFile))
+      const file = Bun.file(resolve(config.npm.readmeFile))
       if (!(await file.exists())) {
         console.error(
           `Config validation error: "npm.readmeFile" does not exist at path: ${config.npm.readmeFile}`,
@@ -210,7 +210,7 @@ async function validateConfig(config: Config): Promise<void> {
         )
         process.exit(1)
       }
-      const file = Bun.file(join(process.cwd(), config.npm.licenseFile))
+      const file = Bun.file(resolve(config.npm.licenseFile))
       if (!(await file.exists())) {
         console.error(
           `Config validation error: "npm.licenseFile" does not exist at path: ${config.npm.licenseFile}`,
@@ -279,7 +279,7 @@ async function validateConfig(config: Config): Promise<void> {
         )
         process.exit(1)
       }
-      const file = Bun.file(join(process.cwd(), config.pypi.readmeFile))
+      const file = Bun.file(resolve(config.pypi.readmeFile))
       if (!(await file.exists())) {
         console.error(
           `Config validation error: "pypi.readmeFile" does not exist at path: ${config.pypi.readmeFile}`,
@@ -298,7 +298,7 @@ async function validateConfig(config: Config): Promise<void> {
         )
         process.exit(1)
       }
-      const file = Bun.file(join(process.cwd(), config.pypi.licenseFile))
+      const file = Bun.file(resolve(config.pypi.licenseFile))
       if (!(await file.exists())) {
         console.error(
           `Config validation error: "pypi.licenseFile" does not exist at path: ${config.pypi.licenseFile}`,
@@ -385,7 +385,7 @@ export async function loadConfig(
     process.exit(1)
   }
 
-  const configPath = join(process.cwd(), configFileName)
+  const configPath = resolve(configFileName)
   const configFile = Bun.file(configPath)
   if (!(await configFile.exists())) {
     console.error(`Configuration file not found at path: ${configPath}`)

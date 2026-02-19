@@ -191,10 +191,8 @@ export async function uploadReleaseAsset(
   const octokit = getOctokit(config.github!.token)
 
   const file = Bun.file(assetPath)
-  const blob = new Blob([await file.arrayBuffer()], { type: file.type })
 
   console.log(`Uploading GitHub asset ${assetName} to release ${releaseId}...`)
-  console.log(file.type)
 
   try {
     await octokit.repos.uploadReleaseAsset({
@@ -203,10 +201,10 @@ export async function uploadReleaseAsset(
       release_id: releaseId,
       name: assetName,
       // @ts-expect-error
-      data: blob,
+      data: file,
       headers: {
         'Content-Type': file.type,
-        'Content-Length': blob.size,
+        'Content-Length': file.size,
       },
     })
 

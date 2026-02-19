@@ -1,5 +1,5 @@
 import { mkdir, readFile } from 'node:fs/promises'
-import { basename, join } from 'node:path'
+import { basename, resolve } from 'node:path'
 import { createArchive } from '@/lib/archive/createArchive'
 import { type Config } from '@/lib/config'
 import { binIndexJs, mainPkgIndexJs } from '@/templates/npm'
@@ -29,7 +29,7 @@ function packageName(config: Config, binaryId?: string): string {
 }
 
 async function outDir(config: Config): Promise<string> {
-  const dir = join(process.cwd(), config.pack.dir, 'npm')
+  const dir = resolve(config.pack.dir, 'npm')
   await mkdir(dir, { recursive: true })
   return dir
 }
@@ -107,9 +107,11 @@ function constructBinIndexJs(config: Config, binaryId: string): string {
 }
 
 function constructMainIndexJs(config: Config): string {
-  const packages = Object.keys(config.npm!.binaryPackages).map((binId) => {
-    return [binId, packageName(config, binId)]
-  })
+  const packages = Object.entries(config.npm!.binaryPackages).map(
+    ([binId, d]) => {
+      return [`${d.os}-${d.arch}`, packageName(config, binId)]
+    },
+  )
 
   return renderString(mainPkgIndexJs, {
     packages,
@@ -141,7 +143,7 @@ self.addEventListener(
       })
 
       const outDirPath = await outDir(config)
-      const archivePath = join(outDirPath, tarball)
+      const archivePath = resolve(outDirPath, tarball)
 
       const archive = createArchive('tar.gz', archivePath)
 
@@ -152,14 +154,14 @@ self.addEventListener(
       archive.addFile(constructIndexJs(config, binaryId), 'package/index.js')
 
       if (config.npm!.readmeFile && config.npm!.readmeFile.trim() !== '') {
-        const filePath = join(process.cwd(), config.npm!.readmeFile)
+        const filePath = resolve(config.npm!.readmeFile)
         const filename = basename(filePath)
         const file = await readFile(filePath)
         archive.addFile(file, `package/${filename}`)
       }
 
       if (config.npm!.licenseFile && config.npm!.licenseFile.trim() !== '') {
-        const filePath = join(process.cwd(), config.npm!.licenseFile)
+        const filePath = resolve(config.npm!.licenseFile)
         const filename = basename(filePath)
         const file = await readFile(filePath)
         archive.addFile(file, `package/${filename}`)
@@ -167,7 +169,7 @@ self.addEventListener(
 
       if (binaryId) {
         const filename = basename(config.binaries[binaryId]!)
-        const binFile = join(process.cwd(), config.binaries[binaryId]!)
+        const binFile = resolve(config.binaries[binaryId]!)
         const file = await readFile(binFile)
         archive.addFile(file, `package/bin/${filename}`)
       }

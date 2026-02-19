@@ -1,5 +1,6 @@
+import { existsSync } from 'node:fs'
 import { readdir, rm } from 'node:fs/promises'
-import { join } from 'node:path'
+import { resolve } from 'node:path'
 import meow from 'meow'
 import { type Config, loadConfig } from '@/lib/config'
 import { runWorker } from '@/workers/runWorker'
@@ -26,12 +27,16 @@ async function validate(config: Config): Promise<void> {
 
 async function clearDir(config: Config): Promise<void> {
   if (config.pack.clearDir) {
-    const outDir = join(process.cwd(), config.pack.dir)
+    const outDir = resolve(config.pack.dir)
+    console.log(outDir)
+    if (!existsSync(outDir)) {
+      return
+    }
     const files = await readdir(outDir)
     await Promise.all(
       files.map(
         async (file) =>
-          await rm(join(outDir, file), {
+          await rm(resolve(outDir, file), {
             recursive: true,
             force: true,
           }),

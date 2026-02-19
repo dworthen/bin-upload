@@ -33,7 +33,7 @@ npm:
       os: "linux"
       arch: "arm64"
     win-x64:
-      os: "windows"
+      os: "win32"
       arch: "x64"
     darwin-x64:
       os: "darwin"

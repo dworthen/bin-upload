@@ -7,7 +7,7 @@ import { getPackOutputDir } from '@/lib/paths'
 async function publishPypi(config: Config): Promise<number> {
   if (!config.pypi) {
     console.warn(
-      'PyPI configuration is missing in the config file. Skipping packing PyPI packages.',
+      'PyPI configuration is missing in the config file. Skipping publishing PyPI packages.',
     )
     return 0
   }
@@ -42,7 +42,7 @@ async function publishPypi(config: Config): Promise<number> {
 async function publishGithub(config: Config): Promise<number> {
   if (!config.github) {
     console.warn(
-      'GitHub configuration is missing in the config file. Skipping packing GitHub archives.',
+      'GitHub configuration is missing in the config file. Skipping publishing GitHub releases.',
     )
     return 0
   }
@@ -50,7 +50,7 @@ async function publishGithub(config: Config): Promise<number> {
   const releaseId = await getReleaseId(config)
   const ghDir = await getPackOutputDir(config, 'github')
 
-  const glob = new Glob(`**/*`)
+  const glob = new Glob(`*`)
   const matches: string[] = []
 
   for (const matchingPath of glob.scanSync({

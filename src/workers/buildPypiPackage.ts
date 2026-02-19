@@ -1,5 +1,5 @@
 import { mkdir, readFile } from 'node:fs/promises'
-import { basename, join } from 'node:path'
+import { basename, resolve } from 'node:path'
 import { type Archive } from '@/lib/archive/Archive'
 import { createArchive } from '@/lib/archive/createArchive'
 import { type Config } from '@/lib/config'
@@ -47,7 +47,7 @@ function distName(config: Config): string {
 }
 
 async function outDir(config: Config): Promise<string> {
-  const dir = join(process.cwd(), config.pack.dir, 'pypi')
+  const dir = resolve(config.pack.dir, 'pypi')
   await mkdir(dir, { recursive: true })
   return dir
 }
@@ -87,7 +87,7 @@ async function addBin(
     })
     process.exit(1)
   }
-  binPath = join(process.cwd(), binPath)
+  binPath = resolve(binPath)
   const binName = basename(binPath)
 
   const file = await readFile(binPath)
@@ -126,7 +126,7 @@ async function addMetadata(
   })
 
   if (config.pypi!.readmeFile) {
-    const file = Bun.file(join(process.cwd(), config.pypi!.readmeFile))
+    const file = Bun.file(resolve(config.pypi!.readmeFile))
     const readmeContents = await file.text()
     metadataLines.push(`Description-Content-Type: text/markdown`)
     metadataLines.push('')
@@ -168,7 +168,7 @@ self.addEventListener(
       })
 
       const outDirPath = await outDir(config)
-      const archivePath = join(outDirPath, wheel)
+      const archivePath = resolve(outDirPath, wheel)
       const archive = createArchive('zip', archivePath)
 
       const results = await Promise.all([

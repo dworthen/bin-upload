@@ -1,5 +1,5 @@
 import { mkdir } from 'node:fs/promises'
-import { join } from 'node:path'
+import { resolve } from 'node:path'
 import { type Config } from '@/lib/config'
 
 export type PackSource = 'npm' | 'pypi' | 'github'
@@ -7,7 +7,7 @@ export async function getPackOutputDir(
   config: Config,
   source: PackSource,
 ): Promise<string> {
-  const dir = join(process.cwd(), config.pack.dir, source)
+  const dir = resolve(config.pack.dir, source)
   await mkdir(dir, { recursive: true })
   return dir
 }

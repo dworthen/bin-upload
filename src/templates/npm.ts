@@ -32,7 +32,15 @@ async function run() {
     }
   
     const args = process.argv.slice(2);
-    const { getBinPath } = await import(supported_platforms.get(key));
+    let getBinPath;
+    try {
+        const d = await import(supported_platforms.get(key));
+        getBinPath = d.getBinPath;
+    } catch (err) {
+        console.error(\`Failed to import \${supported_platforms.get(key)}.\`);
+        console.error(\`Please make sure to install the package \${supported_platforms.get(key)} as a dependency.\`);
+        throw err;
+    }
     const binPath = getBinPath();
     await chmod(binPath, 0o774);
     const cp = spawn(binPath, args, { stdio: "inherit" });
