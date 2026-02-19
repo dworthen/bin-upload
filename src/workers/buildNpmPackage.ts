@@ -1,7 +1,6 @@
-import { createReadStream, createWriteStream } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import archiver from 'archiver'
+import { createArchive } from '@/lib/archive/createArchive'
 import { type Config } from '@/lib/config'
 import { binIndexJs, mainPkgIndexJs } from '@/templates/npm'
 import { renderString } from '@/templates/renderString'
@@ -72,7 +71,7 @@ function constructPackageJson(config: Config, binaryId?: string): string {
   }
 
   if (!binaryId) {
-    pkgJson.bin = constructBinaryPaths(config.npm!.binaryNames)
+    pkgJson.bin = constructBinaryPaths(config.npm!.binNames)
 
     pkgJson.optionalDependencies = Object.keys(
       config.npm!.binaryPackages,
@@ -143,72 +142,43 @@ self.addEventListener(
 
       const outDirPath = await outDir(config)
       const archivePath = join(outDirPath, tarball)
-      const outputStream = createWriteStream(archivePath)
-      const archive = archiver('tar', {
-        gzip: true,
-      })
 
-      archive.on('error', (err) => {
-        postMessage({
-          type: 'error',
-          message: `Error ${building.toLowerCase()}: ${err instanceof Error ? err.message : String(err)}`,
-        })
-        process.exit(1)
-      })
+      const archive = createArchive('tar.gz', archivePath)
 
-      archive.on('warning', (err) => {
-        postMessage({
-          type: 'error',
-          message: `Warning ${building.toLowerCase()}: ${err instanceof Error ? err.message : String(err)}`,
-        })
-      })
-
-      outputStream.on('close', () => {
-        postMessage({
-          type: 'log',
-          message: `Finished ${building.toLowerCase()}`,
-        })
-        process.exit(0)
-      })
-
-      archive.pipe(outputStream)
-
-      archive.append(constructPackageJson(config, binaryId), {
-        name: 'package/package.json',
-      })
-      archive.append(constructIndexJs(config, binaryId), {
-        name: 'package/index.js',
-      })
+      archive.addFile(
+        constructPackageJson(config, binaryId),
+        'package/package.json',
+      )
+      archive.addFile(constructIndexJs(config, binaryId), 'package/index.js')
 
       if (config.npm!.readmeFile && config.npm!.readmeFile.trim() !== '') {
         const filePath = join(process.cwd(), config.npm!.readmeFile)
         const filename = basename(filePath)
-        const file = Bun.file(filePath)
-        archive.append(await file.text(), {
-          name: `package/${filename}`,
-        })
+        const file = await readFile(filePath)
+        archive.addFile(file, `package/${filename}`)
       }
 
       if (config.npm!.licenseFile && config.npm!.licenseFile.trim() !== '') {
         const filePath = join(process.cwd(), config.npm!.licenseFile)
         const filename = basename(filePath)
-        const file = Bun.file(filePath)
-        archive.append(await file.text(), {
-          name: `package/${filename}`,
-        })
+        const file = await readFile(filePath)
+        archive.addFile(file, `package/${filename}`)
       }
 
       if (binaryId) {
         const filename = basename(config.binaries[binaryId]!)
         const binFile = join(process.cwd(), config.binaries[binaryId]!)
-        archive.append(createReadStream(binFile), {
-          name: `package/bin/${filename}`,
-        })
+        const file = await readFile(binFile)
+        archive.addFile(file, `package/bin/${filename}`)
       }
 
-      await archive.finalize()
+      await archive.end()
 
-      // process.exit(0)
+      postMessage({
+        type: 'log',
+        message: `Finished ${building.toLowerCase()}`,
+      })
+      process.exit(0)
     } catch (error) {
       postMessage({
         type: 'error',

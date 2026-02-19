@@ -61,7 +61,7 @@ npm:
       - "npm"
       - "pypi"
       - "publish"
-  # binaryNames:
+  # binNames:
   #   - "bin-upload"
   #   - "bu"
   publish:
@@ -88,9 +88,6 @@ pypi:
     win-x64: "win_amd64"
     darwin-x64: "macosx_10_9_x86_64"
     darwin-arm64: "macosx_11_0_arm64"
-  publish:
-    # Arguments to pass to `uv publish`
-    token: "\${PYPI_TOKEN}"
   metadata:
     # Metadata fields for the pypi package.
     # https://packaging.python.org/en/latest/specifications/core-metadata/
@@ -106,6 +103,9 @@ pypi:
   # entryPointNames:
   #   - "bin-upload"
   #   - "bu"
+  publish:
+    # Arguments to pass to `uv publish`
+    token: "${PYPI_TOKEN}"
 github:
   owner: "dworthen"
   repo: "bin-upload"
@@ -118,9 +118,10 @@ github:
     # if !body -> use commit message of associated tag
     # may also set with CLI args e.g.,
     # bin-upload publish -s github.release.tag_name=v1.0.0 -s "github.release.body=Some description" ...
-    tag_name: "v1.0.0"
-    name: "v1.0.0"
-    body: "Release v1.0.0"
+    # tag_name: "v1.0.0"
+    # name: "v1.0.0"
+    # body: "Release v1.0.0"
+    # draft: true
   archives:
     prefix: "bin-upload-"
     formats:

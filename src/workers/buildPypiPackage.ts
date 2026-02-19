@@ -1,7 +1,7 @@
-import { createReadStream, createWriteStream } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import archiver from 'archiver'
+import { type Archive } from '@/lib/archive/Archive'
+import { createArchive } from '@/lib/archive/createArchive'
 import { type Config } from '@/lib/config'
 import { initPy, wheelMetadata } from '@/templates/pypi'
 import { renderString } from '@/templates/renderString'
@@ -53,7 +53,7 @@ async function outDir(config: Config): Promise<string> {
 }
 
 async function addInitPyToArchive(
-  archive: archiver.Archiver,
+  archive: Archive,
   config: Config,
   binaryId: string,
 ): Promise<[string, string, string]> {
@@ -71,20 +71,11 @@ async function addInitPyToArchive(
   })
 
   const pkgName = packageName(config)
-  const hasher = new Bun.CryptoHasher('sha256')
-  hasher.update(contents)
-  const hash = hasher.digest('base64url')
-  const bytes = new TextEncoder().encode(contents).length
-
-  archive.append(contents, {
-    name: `${pkgName}/__init__.py`,
-  })
-
-  return [`${pkgName}/__init__.py`, hash, bytes.toString()]
+  return archive.addFile(contents, `${pkgName}/__init__.py`)
 }
 
 async function addBin(
-  archive: archiver.Archiver,
+  archive: Archive,
   config: Config,
   binaryId: string,
 ): Promise<[string, string, string]> {
@@ -98,23 +89,14 @@ async function addBin(
   }
   binPath = join(process.cwd(), binPath)
   const binName = basename(binPath)
-  const binFile = Bun.file(binPath)
 
+  const file = await readFile(binPath)
   const pkgName = packageName(config)
-  const hasher = new Bun.CryptoHasher('sha256')
-  const bytes = await binFile.bytes()
-  hasher.update(bytes)
-  const hash = hasher.digest('base64url')
-
-  archive.append(createReadStream(binPath), {
-    name: `${pkgName}/bin/${binName}`,
-  })
-
-  return [`${pkgName}/bin/${binName}`, hash, bytes.length.toString()]
+  return archive.addFile(file, `${pkgName}/bin/${binName}`)
 }
 
 async function addEntryPoints(
-  archive: archiver.Archiver,
+  archive: Archive,
   config: Config,
 ): Promise<[string, string, string]> {
   const dist = distName(config)
@@ -131,20 +113,11 @@ async function addEntryPoints(
 
   const contents = entryPoints.join('\n')
 
-  const hasher = new Bun.CryptoHasher('sha256')
-  hasher.update(contents)
-  const hash = hasher.digest('base64url')
-  const bytes = new TextEncoder().encode(contents).length
-
-  archive.append(contents, {
-    name: `${dist}/entry_points.txt`,
-  })
-
-  return [`${dist}/entry_points.txt`, hash, bytes.toString()]
+  return archive.addFile(contents, `${dist}/entry_points.txt`)
 }
 
 async function addMetadata(
-  archive: archiver.Archiver,
+  archive: Archive,
   config: Config,
 ): Promise<[string, string, string]> {
   const metadataLines: string[] = ['Metadata-Version: 2.5']
@@ -163,20 +136,11 @@ async function addMetadata(
   const contents = metadataLines.join('\n')
 
   const dist = distName(config)
-  const hasher = new Bun.CryptoHasher('sha256')
-  hasher.update(contents)
-  const hash = hasher.digest('base64url')
-  const bytes = new TextEncoder().encode(contents).length
-
-  archive.append(contents, {
-    name: `${dist}/METADATA`,
-  })
-
-  return [`${dist}/METADATA`, hash, bytes.toString()]
+  return archive.addFile(contents, `${dist}/METADATA`)
 }
 
 async function addWheelMetadata(
-  archive: archiver.Archiver,
+  archive: Archive,
   config: Config,
   binaryId: string,
 ): Promise<[string, string, string]> {
@@ -184,16 +148,7 @@ async function addWheelMetadata(
     tag: tag(config, binaryId),
   })
   const dist = distName(config)
-  const hasher = new Bun.CryptoHasher('sha256')
-  hasher.update(contents)
-  const hash = hasher.digest('base64url')
-  const bytes = new TextEncoder().encode(contents).length
-
-  archive.append(contents, {
-    name: `${dist}/WHEEL`,
-  })
-
-  return [`${dist}/WHEEL`, hash, bytes.toString()]
+  return archive.addFile(contents, `${dist}/WHEEL`)
 }
 
 self.addEventListener(
@@ -214,35 +169,7 @@ self.addEventListener(
 
       const outDirPath = await outDir(config)
       const archivePath = join(outDirPath, wheel)
-      const outputStream = createWriteStream(archivePath)
-      const archive = archiver('zip', {
-        zlib: { level: 9 },
-      })
-
-      archive.on('error', (err) => {
-        postMessage({
-          type: 'error',
-          message: `Error ${building.toLowerCase()}: ${err instanceof Error ? err.message : String(err)}`,
-        })
-        process.exit(1)
-      })
-
-      archive.on('warning', (err) => {
-        postMessage({
-          type: 'error',
-          message: `Warning ${building.toLowerCase()}: ${err instanceof Error ? err.message : String(err)}`,
-        })
-      })
-
-      outputStream.on('close', () => {
-        postMessage({
-          type: 'log',
-          message: `Finished ${building.toLowerCase()}`,
-        })
-        process.exit(0)
-      })
-
-      archive.pipe(outputStream)
+      const archive = createArchive('zip', archivePath)
 
       const results = await Promise.all([
         addInitPyToArchive(archive, config, binaryId),
@@ -257,11 +184,14 @@ self.addEventListener(
       )
       recordLines.push(`${dist}/RECORD,,`)
 
-      archive.append(recordLines.join('\n'), {
-        name: `${dist}/RECORD`,
-      })
+      archive.addFile(recordLines.join('\n'), `${dist}/RECORD`)
+      await archive.end()
 
-      await archive.finalize()
+      postMessage({
+        type: 'log',
+        message: `Finished ${building.toLowerCase()}`,
+      })
+      process.exit(0)
     } catch (err) {
       postMessage({
         type: 'error',

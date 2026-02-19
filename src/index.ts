@@ -3,10 +3,12 @@
 import meow from 'meow'
 import { init } from '@/commands/init'
 import { pack } from '@/commands/pack'
+import { publish } from '@/commands/publish'
 
 const commands: Record<string, (argv: string[]) => Promise<void>> = {
   init: init,
   pack: pack,
+  publish: publish,
 }
 
 const cli = meow(

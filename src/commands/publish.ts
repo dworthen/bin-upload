@@ -1,5 +1,80 @@
+import { Glob } from 'bun'
 import meow from 'meow'
-import { loadConfig } from '@/lib/config'
+import { type Config, loadConfig } from '@/lib/config'
+import { getReleaseId, uploadReleaseAsset } from '@/lib/github'
+import { getPackOutputDir } from '@/lib/paths'
+
+async function publishPypi(config: Config): Promise<number> {
+  if (!config.pypi) {
+    console.warn(
+      'PyPI configuration is missing in the config file. Skipping packing PyPI packages.',
+    )
+    return 0
+  }
+
+  const dir = `${await getPackOutputDir(config, 'pypi')}/*.whl`
+
+  console.log(`Publishing PyPI packages ${dir}...`)
+  const publishArgsObj = config.pypi.publish || {}
+  const publishArgs = Object.entries(publishArgsObj).flatMap(([key, value]) => {
+    if (typeof value === 'boolean') {
+      return value ? [`--${key}`] : []
+    }
+
+    return [`--${key}`, String(value)]
+  })
+  const textDecoder = new TextDecoder()
+  const proc = Bun.spawn(['uv', 'publish', ...publishArgs, dir])
+  for await (const chunk of proc.stdout) {
+    process.stdout.write(textDecoder.decode(chunk))
+  }
+
+  if (proc.stderr) {
+    // @ts-expect-error
+    for await (const chunk of proc.stderr) {
+      process.stderr.write(textDecoder.decode(chunk))
+    }
+  }
+
+  return await proc.exited
+}
+
+async function publishGithub(config: Config): Promise<number> {
+  if (!config.github) {
+    console.warn(
+      'GitHub configuration is missing in the config file. Skipping packing GitHub archives.',
+    )
+    return 0
+  }
+
+  const releaseId = await getReleaseId(config)
+  const ghDir = await getPackOutputDir(config, 'github')
+
+  const glob = new Glob(`**/*`)
+  const matches: string[] = []
+
+  for (const matchingPath of glob.scanSync({
+    cwd: ghDir,
+    absolute: true,
+    dot: true,
+    onlyFiles: true,
+  })) {
+    matches.push(matchingPath)
+  }
+
+  // const results = await Promise.all(
+  //   matches.map(async (assetPath) => {
+  //     return await uploadReleaseAsset(config, releaseId, assetPath)
+  //   }),
+  // )
+
+  const results: number[] = []
+  for (const assetPath of matches) {
+    results.push(await uploadReleaseAsset(config, releaseId, assetPath))
+  }
+
+  return results.some((code) => code !== 0) ? 1 : 0
+}
 
 export async function publish(argv: string[]) {
   const cli = meow(
@@ -64,4 +139,19 @@ export async function publish(argv: string[]) {
   if (cli.flags.verbose) {
     console.log('Loaded configuration:', JSON.stringify(config, null, 2))
   }
+
+  const cmds: Array<Promise<number>> = []
+  // if (cli.flags.source === 'all' || cli.flags.source === 'npm') {
+  //   cmds.push(buildNpmPackages(config))
+  // }
+  if (cli.flags.source === 'all' || cli.flags.source === 'pypi') {
+    cmds.push(publishPypi(config))
+  }
+  if (cli.flags.source === 'all' || cli.flags.source === 'github') {
+    cmds.push(publishGithub(config))
+  }
+
+  const results = await Promise.all(cmds)
+
+  process.exit(results.some((code) => code !== 0) ? 1 : 0)
 }

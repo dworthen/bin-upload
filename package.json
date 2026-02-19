@@ -14,15 +14,17 @@
     "@biomejs/biome": "^2.3.14",
     "@types/archiver": "^7.0.0",
     "@types/bun": "latest",
+    "@types/yazl": "^3.3.0",
     "concurrently": "^9.2.1"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "@octokit/rest": "^22.0.1",
     "archiver": "^7.0.1",
     "eta": "^4.5.1",
     "meow": "^14.0.0",
-    "octokit": "^5.0.5"
+    "yazl": "^3.3.1"
   }
 }

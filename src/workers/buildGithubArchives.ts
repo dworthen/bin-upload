@@ -1,8 +1,8 @@
-import { createReadStream, createWriteStream } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
-import archiver from 'archiver'
 import { Glob } from 'bun'
+import { type Archive } from '@/lib/archive/Archive'
+import { createArchive } from '@/lib/archive/createArchive'
 import { type Config, type FileGlob } from '@/lib/config'
 import { getGithubArchiveName, getPackOutputDir } from '@/lib/paths'
 
@@ -90,28 +90,12 @@ async function copyFiles(outputDir: string, config: Config): Promise<void> {
   }
 }
 
-function createArchive(config: Config, archiveId: string): archiver.Archiver {
-  const archiveConfig = config.github!.archives.formats[archiveId]!
-
-  const format =
-    typeof archiveConfig === 'string' ? archiveConfig : archiveConfig.format
-
-  if (format === 'zip') {
-    return archiver('zip')
-  }
-
-  return archiver('tar', {
-    gzip: true,
-  })
-}
-
 async function addFileToArchive(
-  archive: archiver.Archiver,
+  archive: Archive,
   file: FileDescriptor,
 ): Promise<void> {
-  archive.append(createReadStream(file.fullPath), {
-    name: file.relativePath,
-  })
+  const f = await readFile(file.fullPath)
+  archive.addFile(f, file.relativePath)
 }
 
 self.addEventListener(
@@ -128,46 +112,21 @@ self.addEventListener(
         message: building,
       })
 
+      const archiveConfig = config.github!.archives.formats[archiveId]!
+      const format =
+        typeof archiveConfig === 'string' ? archiveConfig : archiveConfig.format
       const outputDir = await getPackOutputDir(config, 'github')
       const archivePath = join(outputDir, archiveName)
-      const outputStream = createWriteStream(archivePath)
-      const archive = createArchive(config, archiveId)
+      const archive = createArchive(format, archivePath)
       const files = getFiles(config, archiveId)
-
-      // postMessage({
-      //   type: 'log',
-      //   message: JSON.stringify(files, undefined, 2),
-      // })
-
-      archive.on('error', (err) => {
-        postMessage({
-          type: 'error',
-          message: `Error ${building.toLowerCase()}: ${err instanceof Error ? err.message : String(err)}`,
-        })
-        process.exit(1)
-      })
-
-      archive.on('warning', (err) => {
-        postMessage({
-          type: 'error',
-          message: `Warning ${building.toLowerCase()}: ${err instanceof Error ? err.message : String(err)}`,
-        })
-      })
-
-      outputStream.on('close', () => {
-        postMessage({
-          type: 'log',
-          message: `Finished ${building.toLowerCase()}`,
-        })
-        process.exit(0)
-      })
-
-      archive.pipe(outputStream)
-
       await Promise.all(files.map((file) => addFileToArchive(archive, file)))
-
+      await archive.end()
       await copyFiles(outputDir, config)
-      archive.finalize()
+      postMessage({
+        type: 'log',
+        message: `Finished ${building.toLowerCase()}`,
+      })
+      process.exit(0)
     } catch (error) {
       postMessage({
         type: 'error',

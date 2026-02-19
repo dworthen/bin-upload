@@ -43,7 +43,7 @@ export type Config = {
     }
     readmeFile?: string
     licenseFile?: string
-    binaryNames?: string[]
+    binNames?: string[]
     publish?: Record<string, string>
   }
   pypi?: {
@@ -158,9 +158,9 @@ async function validateConfig(config: Config): Promise<void> {
       process.exit(1)
     }
     if (
-      config.npm.binaryNames &&
-      (!Array.isArray(config.npm.binaryNames) ||
-        config.npm.binaryNames.some(
+      config.npm.binNames &&
+      (!Array.isArray(config.npm.binNames) ||
+        config.npm.binNames.some(
           (name) => typeof name !== 'string' || name.trim() === '',
         ))
     ) {
