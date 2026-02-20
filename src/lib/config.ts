@@ -1,6 +1,5 @@
 import { resolve } from 'node:path'
-import { mergeObjs } from '@/lib//mergeObjs'
-import { setArrayToObject } from '@/lib/setArrayToObject'
+import { mergeObjs, setArrayToObject } from '@/lib/objects'
 import { replaceEnvVars } from '@/lib/strings'
 
 export type FileGlob = {
@@ -44,7 +43,7 @@ export type Config = {
     readmeFile?: string
     licenseFile?: string
     binNames?: string[]
-    publish?: Record<string, string>
+    publish?: Record<string, unknown>
   }
   pypi?: {
     platformTags: Record<string, string>
@@ -169,13 +168,7 @@ async function validateConfig(config: Config): Promise<void> {
       )
       process.exit(1)
     }
-    if (
-      config.npm.publish &&
-      (typeof config.npm.publish !== 'object' ||
-        Object.values(config.npm.publish).some(
-          (cmd) => typeof cmd !== 'string' || cmd.trim() === '',
-        ))
-    ) {
+    if (config.npm.publish && typeof config.npm.publish !== 'object') {
       console.error(
         'Config validation error: "npm.publish" must be an object mapping npm publish cli flags to non-empty strings if provided.',
       )

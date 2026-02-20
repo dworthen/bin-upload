@@ -2,7 +2,41 @@ import { Glob } from 'bun'
 import meow from 'meow'
 import { type Config, loadConfig } from '@/lib/config'
 import { getReleaseId, uploadReleaseAsset } from '@/lib/github'
+import { uploadToNpm } from '@/lib/npm'
 import { getPackOutputDir } from '@/lib/paths'
+
+async function publishToNpm(config: Config): Promise<number> {
+  if (!config.npm) {
+    console.warn(
+      'npm configuration is missing in the config file. Skipping publishing npm packages.',
+    )
+    return 0
+  }
+
+  const dir = await getPackOutputDir(config, 'npm')
+
+  console.log(`Publishing npm packages...`)
+  const glob = new Glob(`*.tgz`)
+  const matches: string[] = []
+
+  for (const matchingPath of glob.scanSync({
+    cwd: dir,
+    absolute: true,
+    dot: true,
+    onlyFiles: true,
+  })) {
+    matches.push(matchingPath)
+  }
+
+  const results: number[] = []
+  for (const assetPath of matches) {
+    results.push(await uploadToNpm(config, assetPath))
+  }
+
+  console.log(`Finished publishing npm packages.`)
+
+  return results.some((code) => code !== 0) ? 1 : 0
+}
 
 async function publishPypi(config: Config): Promise<number> {
   if (!config.pypi) {
@@ -12,12 +46,12 @@ async function publishPypi(config: Config): Promise<number> {
     return 0
   }
 
-  const dir = `${await getPackOutputDir(config, 'pypi')}/*.whl`
+  const dir = `${(await getPackOutputDir(config, 'pypi')).replace(/\\/g, '/')}/*.whl`
 
   console.log(`Publishing PyPI packages ${dir}...`)
   const publishArgsObj = config.pypi.publish || {}
   const publishArgs = Object.entries(publishArgsObj).flatMap(([key, value]) => {
-    if (typeof value === 'boolean') {
+    if (value === '') {
       return value ? [`--${key}`] : []
     }
 
@@ -36,6 +70,7 @@ async function publishPypi(config: Config): Promise<number> {
     }
   }
 
+  console.log(`Finished publishing PyPI packages.`)
   return await proc.exited
 }
 
@@ -72,6 +107,8 @@ async function publishGithub(config: Config): Promise<number> {
   for (const assetPath of matches) {
     results.push(await uploadReleaseAsset(config, releaseId, assetPath))
   }
+
+  console.log(`Finished publishing GitHub releases.`)
 
   return results.some((code) => code !== 0) ? 1 : 0
 }
@@ -140,18 +177,16 @@ export async function publish(argv: string[]) {
     console.log('Loaded configuration:', JSON.stringify(config, null, 2))
   }
 
-  const cmds: Array<Promise<number>> = []
-  // if (cli.flags.source === 'all' || cli.flags.source === 'npm') {
-  //   cmds.push(buildNpmPackages(config))
-  // }
+  const results: number[] = []
+  if (cli.flags.source === 'all' || cli.flags.source === 'npm') {
+    results.push(await publishToNpm(config))
+  }
   if (cli.flags.source === 'all' || cli.flags.source === 'pypi') {
-    cmds.push(publishPypi(config))
+    results.push(await publishPypi(config))
   }
   if (cli.flags.source === 'all' || cli.flags.source === 'github') {
-    cmds.push(publishGithub(config))
+    results.push(await publishGithub(config))
   }
-
-  const results = await Promise.all(cmds)
 
   process.exit(results.some((code) => code !== 0) ? 1 : 0)
 }

@@ -67,10 +67,11 @@ npm:
   publish:
     # Arguments to pass to `npm publish`
     # https://docs.npmjs.com/cli/v11/commands/npm-publish
-    access: "public"
-    tag: "latest"
+    "--access": "public"
+    "--tag": "latest"
     # Publishing with granular access token
-    # "//registry.npmjs.org/:_authToken": "${NPM_TOKEN}"
+    "--registry=https://registry.npmjs.org/": true
+    "--//registry.npmjs.org/:_authToken=${NPM_TOKEN}": true
     # may also set with CLI args e.g.,
     # bin-upload publish -s "npm.publish.//registry.npmjs.org/:_authToken=some-token"
 pypi:
@@ -105,7 +106,7 @@ pypi:
   #   - "bu"
   publish:
     # Arguments to pass to `uv publish`
-    token: "${PYPI_TOKEN}"
+    "--token": "${PYPI_TOKEN}"
 github:
   owner: "dworthen"
   repo: "bin-upload"
