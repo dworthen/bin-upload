@@ -5,7 +5,7 @@ import subprocess
 
 def get_path() -> Path:
     parent = Path(__file__).parent
-    return (parent / "bin" / "<%= it.binName %>").resolve()
+    return (parent / "bin" / "<%= binName %>").resolve()
 
 def run() -> None:
     path = get_path()
@@ -19,4 +19,4 @@ def run() -> None:
 export const wheelMetadata = `Wheel-Version: 1.0
 Generator: manual 0.0.0
 Root-Is-Purelib: false
-Tag: <%= it.tag %>`
+Tag: <%= tag %>`

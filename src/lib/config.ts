@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import { mergeObjs, setArrayToObject } from '@/lib/objects'
-import { replaceEnvVars } from '@/lib/strings'
+import { renderString } from '@/templates/renderString'
+import { getLatestGitVersionTag } from './git'
 
 export type FileGlob = {
   cwd: string
@@ -23,14 +24,14 @@ export type GithubReleaseOptions = {
 
 export type Config = {
   binaries: Record<string, string>
-  pack: {
+  pack?: {
     prePackCommand?: string
-    dir: string
-    clearDir?: boolean
+    dir?: string
   }
   npm?: {
     binaryPackages: {
       [key: string]: {
+        name: string
         os: string
         arch: string
       }
@@ -61,12 +62,7 @@ export type Config = {
     owner: string
     repo: string
     token: string
-    archives: {
-      prefix?: string
-      formats: Record<string, ArchiveFormat | ArchiveDescriptor>
-      extraFiles?: Array<string | FileGlob>
-    }
-    files?: Array<string | FileGlob>
+    archives: Record<string, ArchiveFormat | ArchiveDescriptor>
     release: Partial<GithubReleaseOptions>
   }
 }
@@ -97,29 +93,43 @@ function isArchiveDescriptor(obj: unknown): boolean {
 }
 
 async function validateConfig(config: Config): Promise<void> {
-  if (!config.binaries || typeof config.binaries !== 'object') {
+  if (
+    !config.binaries ||
+    typeof config.binaries !== 'object' ||
+    Object.values(config.binaries).some(
+      (path) => typeof path !== 'string' || path.trim() === '',
+    )
+  ) {
     console.error(
       'Config validation error: "binaries" is required and must be an object mapping platform to binary path.',
     )
     process.exit(1)
   }
 
-  if (!config.pack || typeof config.pack !== 'object' || !config.pack.dir) {
-    console.error(
-      'Config validation error: "pack" is required and must be an object with a "dir" property.',
-    )
-    process.exit(1)
-  }
-
-  if (
-    config.pack.prePackCommand &&
-    (typeof config.pack.prePackCommand !== 'string' ||
-      config.pack.prePackCommand.trim() === '')
-  ) {
-    console.error(
-      'Config validation error: "pack.prePackCommand" must be a string if provided.',
-    )
-    process.exit(1)
+  if (config.pack) {
+    if (typeof config.pack !== 'object') {
+      console.error('Config validation error: "pack" must be an object.')
+      process.exit(1)
+    }
+    if (
+      config.pack.prePackCommand &&
+      (typeof config.pack.prePackCommand !== 'string' ||
+        config.pack.prePackCommand.trim() === '')
+    ) {
+      console.error(
+        'Config validation error: "pack.prePackCommand" must be a string if provided.',
+      )
+      process.exit(1)
+    }
+    if (
+      config.pack.dir &&
+      (typeof config.pack.dir !== 'string' || config.pack.dir.trim() === '')
+    ) {
+      console.error(
+        'Config validation error: "pack.dir" must be a string if provided.',
+      )
+      process.exit(1)
+    }
   }
 
   if (config.npm) {
@@ -143,6 +153,9 @@ async function validateConfig(config: Config): Promise<void> {
       (typeof config.npm.binaryPackages !== 'object' ||
         Object.values(config.npm.binaryPackages).some(
           (pkg) =>
+            !pkg.name ||
+            typeof pkg.name !== 'string' ||
+            pkg.name.trim() === '' ||
             !pkg.os ||
             typeof pkg.os !== 'string' ||
             pkg.os.trim() === '' ||
@@ -152,7 +165,7 @@ async function validateConfig(config: Config): Promise<void> {
         ))
     ) {
       console.error(
-        'Config validation error: "npm.binaryPackages" must be an object with "os" and "arch" properties for each binary if provided.',
+        'Config validation error: "npm.binaryPackages" must be an object with "name", "os", and "arch" properties for each binary if provided.',
       )
       process.exit(1)
     }
@@ -170,7 +183,7 @@ async function validateConfig(config: Config): Promise<void> {
     }
     if (config.npm.publish && typeof config.npm.publish !== 'object') {
       console.error(
-        'Config validation error: "npm.publish" must be an object mapping npm publish cli flags to non-empty strings if provided.',
+        'Config validation error: "npm.publish" must be an object mapping of npm publish cli flags.',
       )
       process.exit(1)
     }
@@ -322,34 +335,12 @@ async function validateConfig(config: Config): Promise<void> {
     if (
       !config.github.archives ||
       typeof config.github.archives !== 'object' ||
-      !config.github.archives.formats ||
-      typeof config.github.archives.formats !== 'object' ||
-      Object.values(config.github.archives.formats).some(
+      Object.values(config.github.archives).some(
         (file) => !isArchiveDescriptor(file),
       )
     ) {
       console.error(
-        'Config validation error: "github.archives" is required and must be an object with a "formats" property that is either a string[] or an object with a "format" and "files" properties.',
-      )
-      process.exit(1)
-    }
-    if (
-      config.github.archives.prefix &&
-      (typeof config.github.archives.prefix !== 'string' ||
-        config.github.archives.prefix.trim() === '')
-    ) {
-      console.error(
-        'Config validation error: "github.archives.prefix" must be a string if provided.',
-      )
-      process.exit(1)
-    }
-    if (
-      config.github.archives.extraFiles &&
-      (!Array.isArray(config.github.archives.extraFiles) ||
-        config.github.archives.extraFiles.some((file) => !isFileGlob(file)))
-    ) {
-      console.error(
-        'Config validation error: "github.archives.extraFiles" must be an array of non-empty strings or FileGlob object with "cwd" and "pattern" properties if provided.',
+        'Config validation error: "github.archives" is required and must be an object, archive_name -> format (tar.gz or zip) or archive_name -> { format: tar.gz or zip, files: array of file globs }.',
       )
       process.exit(1)
     }
@@ -385,10 +376,16 @@ export async function loadConfig(
     process.exit(1)
   }
 
+  const data: Record<string, unknown> = {}
+  data.env = process.env
+  data.vars = {
+    gitTag: await getLatestGitVersionTag(),
+  }
+
   let configText = await configFile.text()
 
   try {
-    configText = replaceEnvVars(configText)
+    configText = renderString(configText, data)
   } catch (err) {
     // @ts-expect-error
     console.error(`Error processing config, '${configPath}': ${err.message}`)

@@ -3,6 +3,7 @@ import { basename, resolve } from 'node:path'
 import { type Archive } from '@/lib/archive/Archive'
 import { createArchive } from '@/lib/archive/createArchive'
 import { type Config } from '@/lib/config'
+import { getPackOutputDir } from '@/lib/paths'
 import { initPy, wheelMetadata } from '@/templates/pypi'
 import { renderString } from '@/templates/renderString'
 
@@ -44,12 +45,6 @@ function distName(config: Config): string {
   const pkgName = packageName(config)
   const pkgVersion = version(config)
   return `${pkgName}-${pkgVersion}.dist-info`
-}
-
-async function outDir(config: Config): Promise<string> {
-  const dir = resolve(config.pack.dir, 'pypi')
-  await mkdir(dir, { recursive: true })
-  return dir
 }
 
 async function addInitPyToArchive(
@@ -167,7 +162,7 @@ self.addEventListener(
         message: building,
       })
 
-      const outDirPath = await outDir(config)
+      const outDirPath = await getPackOutputDir(config, 'pypi')
       const archivePath = resolve(outDirPath, wheel)
       const archive = createArchive('zip', archivePath)
 

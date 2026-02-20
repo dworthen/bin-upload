@@ -109,7 +109,7 @@ export async function getReleaseIdByTagName(
   }
 }
 
-export async function createRelaase(
+export async function createRelease(
   config: Config,
   releaseOptions: GithubReleaseOptions,
 ): Promise<number> {
@@ -136,7 +136,7 @@ export async function getReleaseId(config: Config): Promise<number> {
   let releaseId = await getReleaseIdByTagName(config, releaseOptions)
 
   if (!releaseId) {
-    releaseId = await createRelaase(config, releaseOptions)
+    releaseId = await createRelease(config, releaseOptions)
   }
 
   return releaseId

@@ -1,6 +1,10 @@
 import { Eta } from 'eta'
 
-const eta = new Eta()
+const eta = new Eta({
+  useWith: true,
+  autoEscape: false,
+  autoTrim: false,
+})
 
 export function renderString(
   template: string,

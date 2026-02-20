@@ -3,6 +3,7 @@ import { readdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import meow from 'meow'
 import { type Config, loadConfig } from '@/lib/config'
+import { getPackOutputDir } from '@/lib/paths'
 import { runWorker } from '@/workers/runWorker'
 
 async function validate(config: Config): Promise<void> {
@@ -26,27 +27,24 @@ async function validate(config: Config): Promise<void> {
 }
 
 async function clearDir(config: Config): Promise<void> {
-  if (config.pack.clearDir) {
-    const outDir = resolve(config.pack.dir)
-    console.log(outDir)
-    if (!existsSync(outDir)) {
-      return
-    }
-    const files = await readdir(outDir)
-    await Promise.all(
-      files.map(
-        async (file) =>
-          await rm(resolve(outDir, file), {
-            recursive: true,
-            force: true,
-          }),
-      ),
-    )
+  const outDir = await getPackOutputDir(config)
+  if (!existsSync(outDir)) {
+    return
   }
+  const files = await readdir(outDir)
+  await Promise.all(
+    files.map(
+      async (file) =>
+        await rm(resolve(outDir, file), {
+          recursive: true,
+          force: true,
+        }),
+    ),
+  )
 }
 
 async function prePackCommand(config: Config): Promise<void> {
-  if (config.pack.prePackCommand) {
+  if (config.pack?.prePackCommand) {
     console.log(`Running pre-pack command: ${config.pack.prePackCommand}`)
     const proc = Bun.spawn(config.pack.prePackCommand.split(' '), {
       // stdio: ['inherit', 'inherit', 'inherit'],
@@ -137,7 +135,7 @@ async function buildGithubArchives(config: Config): Promise<number> {
   ).href
 
   const processOutputs = await Promise.all([
-    ...Object.keys(config.github!.archives.formats).map(async (archiveId) => {
+    ...Object.keys(config.github!.archives).map(async (archiveId) => {
       const message = {
         config,
         archiveId,
@@ -211,7 +209,8 @@ export async function pack(argv: string[]) {
   const config = await loadConfig(cli.flags.config, cli.flags.set)
 
   if (cli.flags.verbose) {
-    console.log('Loaded configuration:', JSON.stringify(config, null, 2))
+    console.log('Loaded configuration:')
+    console.log(Bun.YAML.stringify(config, null, 2))
   }
 
   await clearDir(config)

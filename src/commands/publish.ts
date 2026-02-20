@@ -3,6 +3,7 @@ import meow from 'meow'
 import { type Config, loadConfig } from '@/lib/config'
 import { getReleaseId, uploadReleaseAsset } from '@/lib/github'
 import { uploadToNpm } from '@/lib/npm'
+import { objToCliArgs } from '@/lib/objects'
 import { getPackOutputDir } from '@/lib/paths'
 
 async function publishToNpm(config: Config): Promise<number> {
@@ -49,14 +50,7 @@ async function publishPypi(config: Config): Promise<number> {
   const dir = `${(await getPackOutputDir(config, 'pypi')).replace(/\\/g, '/')}/*.whl`
 
   console.log(`Publishing PyPI packages ${dir}...`)
-  const publishArgsObj = config.pypi.publish || {}
-  const publishArgs = Object.entries(publishArgsObj).flatMap(([key, value]) => {
-    if (value === '') {
-      return value ? [`--${key}`] : []
-    }
-
-    return [`--${key}`, String(value)]
-  })
+  const publishArgs = objToCliArgs(config.pypi.publish || {})
   const textDecoder = new TextDecoder()
   const proc = Bun.spawn(['uv', 'publish', ...publishArgs, dir])
   for await (const chunk of proc.stdout) {
@@ -174,7 +168,8 @@ export async function publish(argv: string[]) {
   const config = await loadConfig(cli.flags.config, cli.flags.set)
 
   if (cli.flags.verbose) {
-    console.log('Loaded configuration:', JSON.stringify(config, null, 2))
+    console.log('Loaded configuration:')
+    console.log(Bun.YAML.stringify(config, null, 2))
   }
 
   const results: number[] = []

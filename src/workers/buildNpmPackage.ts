@@ -1,7 +1,8 @@
-import { mkdir, readFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import { createArchive } from '@/lib/archive/createArchive'
 import { type Config } from '@/lib/config'
+import { getPackOutputDir } from '@/lib/paths'
 import { binIndexJs, mainPkgIndexJs } from '@/templates/npm'
 import { renderString } from '@/templates/renderString'
 
@@ -12,26 +13,14 @@ type BuildNpmPackageMessage = {
   binaryId?: string
 }
 
-function tarballName(config: Config, binaryId?: string): string {
-  const baseName = config
-    .npm!.packageJson.name.replace(/@/g, '')
-    .replace(/\//g, '-')
-  const version = config.npm!.packageJson.version
-  return binaryId
-    ? `${baseName}-${binaryId}-${version}.tgz`
-    : `${baseName}-${version}.tgz`
-}
-
 function packageName(config: Config, binaryId?: string): string {
   return binaryId
-    ? `${config.npm!.packageJson.name}-${binaryId}`
+    ? config.npm!.binaryPackages[binaryId]!.name
     : config.npm!.packageJson.name
 }
 
-async function outDir(config: Config): Promise<string> {
-  const dir = resolve(config.pack.dir, 'npm')
-  await mkdir(dir, { recursive: true })
-  return dir
+function tarballName(config: Config, binaryId?: string): string {
+  return `${packageName(config, binaryId).replace(/@/g, '').replace(/\//g, '-')}.tgz`
 }
 
 function constructBinaryPaths(
@@ -142,7 +131,7 @@ self.addEventListener(
         message: building,
       })
 
-      const outDirPath = await outDir(config)
+      const outDirPath = await getPackOutputDir(config, 'npm')
       const archivePath = resolve(outDirPath, tarball)
 
       const archive = createArchive('tar.gz', archivePath)

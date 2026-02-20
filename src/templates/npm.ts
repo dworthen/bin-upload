@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { existsSync } from "node:fs";
 
 export function getBinPath() {
-  const binPath = join(import.meta.dirname, "bin", "<%= it.binFilename %>");
+  const binPath = join(import.meta.dirname, "bin", "<%= binFilename %>");
   if (!existsSync(binPath)) {
     throw new Error(\`Binary not found at expected path:  \${binPath}\`);
   }
@@ -17,7 +17,7 @@ import { spawn } from "node:child_process";
 import { chmod } from "node:fs/promises";
 
 const supported_platforms = new Map([
-<% it.packages.forEach(pkg => { %>
+<% packages.forEach(pkg => { %>
   ["<%= pkg[0] %>", "<%= pkg[1] %>"],
 <% }) %>
 ]);

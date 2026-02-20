@@ -1,10 +1,10 @@
 import { mkdir, readFile } from 'node:fs/promises'
-import { basename, dirname, join, resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { Glob } from 'bun'
 import { type Archive } from '@/lib/archive/Archive'
 import { createArchive } from '@/lib/archive/createArchive'
 import { type Config, type FileGlob } from '@/lib/config'
-import { getGithubArchiveName, getPackOutputDir } from '@/lib/paths'
+import { getPackOutputDir } from '@/lib/paths'
 
 declare var self: Worker
 
@@ -16,6 +16,15 @@ type BuildGithubArchivesMessage = {
 type FileDescriptor = {
   fullPath: string
   relativePath: string
+}
+
+function getGithubArchiveName(config: Config, archiveId: string): string {
+  const archiveConfig = config.github!.archives[archiveId]!
+  if (typeof archiveConfig === 'string') {
+    return `${archiveId}.${archiveConfig}`
+  }
+
+  return `${archiveId}.${archiveConfig.format}`
 }
 
 function getFileDescriptors(files: Array<string | FileGlob>): FileDescriptor[] {
@@ -44,7 +53,7 @@ function getFileDescriptors(files: Array<string | FileGlob>): FileDescriptor[] {
 }
 
 function getFiles(config: Config, archiveId: string): FileDescriptor[] {
-  const archiveConfig = config.github!.archives.formats[archiveId]!
+  const archiveConfig = config.github!.archives[archiveId]!
 
   const files: Array<string | FileGlob> = []
 
@@ -58,36 +67,16 @@ function getFiles(config: Config, archiveId: string): FileDescriptor[] {
       process.exit(1)
     }
 
-    const absoluteFilePath = join(process.cwd(), relativeFilePath)
+    const absoluteFilePath = resolve(relativeFilePath)
     const cwd = dirname(absoluteFilePath)
     const pattern = basename(absoluteFilePath)
 
     files.push({ cwd, pattern })
-    if (config.github!.archives.extraFiles) {
-      files.push(...config.github!.archives.extraFiles)
-    }
   } else {
     files.push(...archiveConfig.files)
   }
 
   return getFileDescriptors(files)
-}
-
-async function copyFiles(outputDir: string, config: Config): Promise<void> {
-  if (config.github!.files) {
-    const files = getFileDescriptors(config.github!.files)
-
-    await Promise.all(
-      files.map(async (file) => {
-        const input = await readFile(file.fullPath)
-        const outputPath = join(outputDir, file.relativePath)
-        const dir = dirname(outputPath)
-        await mkdir(dir, { recursive: true })
-        const output = Bun.file(outputPath)
-        await Bun.write(output, input)
-      }),
-    )
-  }
 }
 
 async function addFileToArchive(
@@ -112,16 +101,15 @@ self.addEventListener(
         message: building,
       })
 
-      const archiveConfig = config.github!.archives.formats[archiveId]!
+      const archiveConfig = config.github!.archives[archiveId]!
       const format =
         typeof archiveConfig === 'string' ? archiveConfig : archiveConfig.format
       const outputDir = await getPackOutputDir(config, 'github')
-      const archivePath = join(outputDir, archiveName)
+      const archivePath = resolve(outputDir, archiveName)
       const archive = createArchive(format, archivePath)
       const files = getFiles(config, archiveId)
       await Promise.all(files.map((file) => addFileToArchive(archive, file)))
       await archive.end()
-      await copyFiles(outputDir, config)
       postMessage({
         type: 'log',
         message: `Finished ${building.toLowerCase()}`,
