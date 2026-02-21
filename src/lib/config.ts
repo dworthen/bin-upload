@@ -263,13 +263,7 @@ async function validateConfig(config: Config): Promise<void> {
       )
       process.exit(1)
     }
-    if (
-      config.pypi.publish &&
-      (typeof config.pypi.publish !== 'object' ||
-        Object.values(config.pypi.publish).some(
-          (cmd) => typeof cmd !== 'string' || cmd.trim() === '',
-        ))
-    ) {
+    if (config.pypi.publish && typeof config.pypi.publish !== 'object') {
       console.error(
         'Config validation error: "pypi.publish" must be an object mapping PyPI publish cli flags to non-empty strings if provided.',
       )
@@ -344,7 +338,7 @@ async function validateConfig(config: Config): Promise<void> {
       )
       process.exit(1)
     }
-    if (config.github.release && typeof config.github.release !== 'object') {
+    if (!config.github.release || typeof config.github.release !== 'object') {
       console.error(
         'Config validation error: "github.release" must be an object if provided.',
       )

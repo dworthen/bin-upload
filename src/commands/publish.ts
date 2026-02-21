@@ -1,7 +1,7 @@
 import { Glob } from 'bun'
 import meow from 'meow'
 import { type Config, loadConfig } from '@/lib/config'
-import { getReleaseId, uploadReleaseAsset } from '@/lib/github'
+import { getReleaseInfo, uploadReleaseAsset } from '@/lib/github'
 import { uploadToNpm } from '@/lib/npm'
 import { objToCliArgs } from '@/lib/objects'
 import { getPackOutputDir } from '@/lib/paths'
@@ -75,8 +75,14 @@ async function publishGithub(config: Config): Promise<number> {
     )
     return 0
   }
+  if (!config.github.release.tag_name) {
+    console.error(
+      'GitHub release configuration error: "github.release.tag_name" is required.',
+    )
+    return 1
+  }
 
-  const releaseId = await getReleaseId(config)
+  const releaseInfo = await getReleaseInfo(config)
   const ghDir = await getPackOutputDir(config, 'github')
 
   const glob = new Glob(`*`)
@@ -99,7 +105,7 @@ async function publishGithub(config: Config): Promise<number> {
 
   const results: number[] = []
   for (const assetPath of matches) {
-    results.push(await uploadReleaseAsset(config, releaseId, assetPath))
+    results.push(await uploadReleaseAsset(config, releaseInfo, assetPath))
   }
 
   console.log(`Finished publishing GitHub releases.`)

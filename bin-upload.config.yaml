@@ -141,12 +141,12 @@ github:
     # win-arm64: "zip"
     darwin-x64: "tar.gz"
     darwin-arm64: "tar.gz"
-    source:
-      format: "tar.gz"
-      files:
-        - cwd: "."
-          pattern: "src/**/*"
-        - "README.md"
-        - "LICENSE"
-        - cwd: "src"
-          pattern: "index.ts"
+    # source:
+    #   format: "tar.gz"
+    #   files:
+    #     - cwd: "."
+    #       pattern: "src/**/*"
+    #     - "README.md"
+    #     - "LICENSE"
+    #     - cwd: "src"
+    #       pattern: "index.ts"

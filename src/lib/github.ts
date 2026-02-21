@@ -1,5 +1,6 @@
 import { basename } from 'node:path'
 import { Octokit } from '@octokit/rest'
+import { $ } from 'bun'
 import { type Config, type GithubReleaseOptions } from '@/lib/config'
 
 let octokit: Octokit | null = null
@@ -61,30 +62,38 @@ export async function getLatestTag(config: Config): Promise<TagData> {
   }
 }
 
+export async function getTagCommitMessage(tagName: string): Promise<string> {
+  try {
+    const tagCommit = await $`git rev-list -n 1 ${tagName}`.text()
+    return (await $`git log -n 1 --format=%B ${tagCommit}`.text()).trim()
+  } catch (error) {
+    console.error(`Error retrieving commit message for tag ${tagName}`)
+    throw error
+  }
+}
+
 export async function getReleaseOptions(
   config: Config,
 ): Promise<GithubReleaseOptions> {
-  const releaseOptions = config.github!.release || {}
+  const releaseOptions = config.github!.release
 
-  if (
-    !releaseOptions.tag_name ||
-    !releaseOptions.name ||
-    !releaseOptions.body
-  ) {
-    const latestTagData = await getLatestTag(config)
-
-    releaseOptions.tag_name = releaseOptions.tag_name || latestTagData.name
-    releaseOptions.name = releaseOptions.name || latestTagData.name
-    releaseOptions.body = releaseOptions.body || latestTagData.commitMessage
-  }
+  releaseOptions.name = releaseOptions.name || releaseOptions.tag_name!
+  releaseOptions.body =
+    releaseOptions.body || (await getTagCommitMessage(releaseOptions.tag_name!))
 
   return releaseOptions as GithubReleaseOptions
 }
 
-export async function getReleaseIdByTagName(
+export type ReleaseInfo = {
+  id: number
+  name: string | null
+  tag_name: string
+}
+
+export async function getReleaseInfoByTagName(
   config: Config,
   releaseOptions: GithubReleaseOptions,
-): Promise<number | null> {
+): Promise<ReleaseInfo | null> {
   const octokit = getOctokit(config.github!.token)
 
   try {
@@ -100,7 +109,11 @@ export async function getReleaseIdByTagName(
       },
     )
 
-    return releaseData.data.id
+    return {
+      id: releaseData.data.id,
+      name: releaseData.data.name,
+      tag_name: releaseData.data.tag_name,
+    }
   } catch (error: any) {
     if (error.status === 404) {
       return null
@@ -112,7 +125,7 @@ export async function getReleaseIdByTagName(
 export async function createRelease(
   config: Config,
   releaseOptions: GithubReleaseOptions,
-): Promise<number> {
+): Promise<ReleaseInfo> {
   const octokit = getOctokit(config.github!.token)
 
   const response = await octokit.request(
@@ -127,19 +140,23 @@ export async function createRelease(
     },
   )
 
-  return response.data.id
+  return {
+    id: response.data.id,
+    name: response.data.name,
+    tag_name: releaseOptions.tag_name,
+  }
 }
 
-export async function getReleaseId(config: Config): Promise<number> {
+export async function getReleaseInfo(config: Config): Promise<ReleaseInfo> {
   const releaseOptions = await getReleaseOptions(config)
 
-  let releaseId = await getReleaseIdByTagName(config, releaseOptions)
+  let releaseInfo = await getReleaseInfoByTagName(config, releaseOptions)
 
-  if (!releaseId) {
-    releaseId = await createRelease(config, releaseOptions)
+  if (!releaseInfo) {
+    releaseInfo = await createRelease(config, releaseOptions)
   }
 
-  return releaseId
+  return releaseInfo
 }
 
 const assetsCache: Record<number, string[]> = {}
@@ -175,15 +192,15 @@ export async function getReleaseAssets(
 
 export async function uploadReleaseAsset(
   config: Config,
-  releaseId: number,
+  releaseInfo: ReleaseInfo,
   assetPath: string,
 ): Promise<number> {
   const assetName = basename(assetPath)
-  const existingAssets = await getReleaseAssets(config, releaseId)
+  const existingAssets = await getReleaseAssets(config, releaseInfo.id)
 
   if (existingAssets.includes(assetName)) {
     console.warn(
-      `GitHub asset ${assetName} already exists for release ${releaseId}. Skipping upload.`,
+      `GitHub asset ${assetName} already exists for release ${releaseInfo.name} associated with tag ${releaseInfo.tag_name}. Skipping upload.`,
     )
     return 0
   }
@@ -192,13 +209,15 @@ export async function uploadReleaseAsset(
 
   const file = Bun.file(assetPath)
 
-  console.log(`Uploading GitHub asset ${assetName} to release ${releaseId}...`)
+  console.log(
+    `Uploading GitHub asset ${assetName} to release ${releaseInfo.name} associated with tag ${releaseInfo.tag_name}...`,
+  )
 
   try {
     await octokit.repos.uploadReleaseAsset({
       owner: config.github!.owner,
       repo: config.github!.repo,
-      release_id: releaseId,
+      release_id: releaseInfo.id,
       name: assetName,
       // @ts-expect-error
       data: file,
@@ -209,18 +228,18 @@ export async function uploadReleaseAsset(
     })
 
     console.log(
-      `Finished uploading GitHub asset ${assetName} to release ${releaseId}.`,
+      `Finished uploading GitHub asset ${assetName} to release ${releaseInfo.name} associated with tag ${releaseInfo.tag_name}.`,
     )
     return 0
   } catch (error: any) {
     if (error.status === 422) {
       console.warn(
-        `GitHub asset ${assetName} already exists for release ${releaseId}. Skipping upload.`,
+        `GitHub asset ${assetName} already exists for release ${releaseInfo.name} associated with tag ${releaseInfo.tag_name}. Skipping upload.`,
       )
       return 0
     } else {
       console.error(
-        `Error uploading GitHub asset ${assetName} for release ${releaseId}: ${error instanceof Error ? error.message : String(error)}`,
+        `Error uploading GitHub asset ${assetName} for release ${releaseInfo.name} associated with tag ${releaseInfo.tag_name}: ${error instanceof Error ? error.message : String(error)}`,
       )
       return 1
     }

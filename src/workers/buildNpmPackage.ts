@@ -20,7 +20,7 @@ function packageName(config: Config, binaryId?: string): string {
 }
 
 function tarballName(config: Config, binaryId?: string): string {
-  return `${packageName(config, binaryId).replace(/@/g, '').replace(/\//g, '-')}.tgz`
+  return `${packageName(config, binaryId).replace(/@/g, '').replace(/\//g, '-')}-${config.npm!.packageJson.version}.tgz`
 }
 
 function constructBinaryPaths(
