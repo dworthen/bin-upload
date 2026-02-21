@@ -122,11 +122,10 @@ github:
   release:
     # Arguments to pass to gh release api
     # https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#create-a-release
-    # if !tag_name -> use latest tag
     # if !name -> use tag_name
     # if !body -> use commit message of associated tag
     # may also set with CLI args e.g.,
-    # bin-upload publish -s github.release.tag_name=v1.0.0 -s "github.release.body=Some description" ...
+    # bin-upload publish -s "github.release.tag_name=v1.0.0" -s "github.release.body=Some description" ...
     tag_name: "v<%= vars.gitTag %>"
     # name: "v1.0.0"
     # body: "Release v1.0.0"

@@ -64,7 +64,7 @@ export async function getLatestTag(config: Config): Promise<TagData> {
 
 export async function getTagCommitMessage(tagName: string): Promise<string> {
   try {
-    const tagCommit = await $`git rev-list -n 1 ${tagName}`.text()
+    const tagCommit = (await $`git rev-list -n 1 ${tagName}`.text()).trim()
     return (await $`git log -n 1 --format=%B ${tagCommit}`.text()).trim()
   } catch (error) {
     console.error(`Error retrieving commit message for tag ${tagName}`)
