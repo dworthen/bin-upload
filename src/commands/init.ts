@@ -1,4 +1,135 @@
+import { resolve } from 'node:path'
+import { confirm, input } from '@inquirer/prompts'
 import meow from 'meow'
+import validate from 'validate-npm-package-name'
+import { configTemplate } from '@/templates/configTemplate'
+import { renderString } from '@/templates/renderString'
+
+async function getNpmConfig(): Promise<Record<string, any>> {
+  const npmConfig: Record<string, any> = {}
+
+  npmConfig.name = await input({
+    message: 'What is the name of your npm package?',
+    required: true,
+    validate: (value) => {
+      const validation = validate(value)
+      if (validation.validForNewPackages) {
+        return true
+      } else {
+        return `Invalid npm package name: ${validation.errors?.join(', ') ?? ''}`
+      }
+    },
+  })
+
+  npmConfig.description = await input({
+    message: 'What is the description of your npm package?',
+    required: false,
+  })
+
+  npmConfig.author = await input({
+    message: 'Who is the author of your npm package (NAME, <EMAIL>)?',
+    required: false,
+  })
+
+  npmConfig.license = await input({
+    message: 'What is the license of your npm package?',
+    default: 'MIT',
+    prefill: 'editable',
+    required: false,
+  })
+
+  npmConfig.repository = await input({
+    message:
+      'What is the repository URL of your npm package (github:OWNER/REPO)?',
+    required: false,
+  })
+
+  const keywords: string[] = []
+  let keyword: string | null
+
+  do {
+    keyword = await input({
+      message: 'Enter a keyword for your npm package (leave blank to finish):',
+      required: false,
+    })
+    if (keyword) {
+      keywords.push(keyword)
+    }
+  } while (keyword)
+
+  if (keywords.length > 0) {
+    npmConfig.keywords = keywords
+  }
+
+  return npmConfig
+}
+
+async function getPypiConfig(): Promise<Record<string, any>> {
+  const pypiConfig: Record<string, any> = {}
+
+  pypiConfig.name = await input({
+    message: 'What is the name of your PyPI package?',
+    required: true,
+  })
+
+  pypiConfig.summary = await input({
+    message: 'What is the summary of your PyPI package?',
+    required: false,
+  })
+
+  pypiConfig.author = await input({
+    message: 'Who is the author of your PyPI package (NAME, <EMAIL>)?',
+    required: false,
+  })
+
+  pypiConfig.license = await input({
+    message: 'What is the license of your PyPI package?',
+    default: 'MIT',
+    prefill: 'editable',
+    required: false,
+  })
+
+  pypiConfig.projectUrl = await input({
+    message:
+      'What is the project URL of your PyPI package (https://github.com/OWNER/REPO)?',
+    required: false,
+  })
+
+  const keywords: string[] = []
+  let keyword: string | null
+
+  do {
+    keyword = await input({
+      message: 'Enter a keyword for your pypi package (leave blank to finish):',
+      required: false,
+    })
+    if (keyword) {
+      keywords.push(keyword)
+    }
+  } while (keyword)
+
+  if (keywords.length > 0) {
+    pypiConfig.keywords = keywords
+  }
+
+  return pypiConfig
+}
+
+async function getGithubConfig(): Promise<Record<string, any>> {
+  const ghConfig: Record<string, any> = {}
+
+  ghConfig.owner = await input({
+    message: 'Who is the GitHub owner (username or organization)?',
+    required: true,
+  })
+
+  ghConfig.repo = await input({
+    message: 'What is the GitHub repository name?',
+    required: true,
+  })
+
+  return ghConfig
+}
 
 export async function init(argv: string[]) {
   const cli = meow(
@@ -18,7 +149,7 @@ export async function init(argv: string[]) {
     {
       argv: argv,
       importMeta: import.meta,
-      description: 'Initialize a bin-to-npm configuration file.',
+      description: 'Initialize a bin-upload configuration file.',
       autoHelp: false,
       autoVersion: false,
       flags: {
@@ -29,8 +160,7 @@ export async function init(argv: string[]) {
         config: {
           type: 'string',
           shortFlag: 'c',
-          default: 'bin-upload.config.yaml',
-          isRequired: true,
+          isRequired: false,
         },
         force: {
           type: 'boolean',
@@ -46,5 +176,69 @@ export async function init(argv: string[]) {
     process.exit(1)
   }
 
-  console.log(cli)
+  const results: Record<string, any> = {
+    npm: null,
+    pypi: null,
+    github: null,
+  }
+
+  const configPath =
+    cli.flags.config ||
+    (await input({
+      message: 'Where do you want to output the configuration file?',
+      default: './bin-upload.config.yaml',
+      prefill: 'editable',
+      required: true,
+    }))
+
+  const configFile = Bun.file(resolve(configPath))
+
+  if (!cli.flags.force && (await configFile.exists())) {
+    const overwrite = await confirm({
+      message: `Configuration file already exists at ${configPath}. Do you want to overwrite it?`,
+      default: false,
+    })
+    if (!overwrite) {
+      console.warn('Aborting initialization.')
+      process.exit(1)
+    }
+  }
+
+  const publishNpm = await confirm({
+    message: 'Do you want to publish to npm?',
+    default: true,
+  })
+
+  if (publishNpm) {
+    results.npm = await getNpmConfig()
+  }
+
+  const publishPypi = await confirm({
+    message: 'Do you want to publish to PyPI?',
+    default: true,
+  })
+
+  if (publishPypi) {
+    results.pypi = await getPypiConfig()
+  }
+
+  const publishGithub = await confirm({
+    message: 'Do you want to publish to GitHub releases?',
+    default: true,
+  })
+
+  if (publishGithub) {
+    results.gh = await getGithubConfig()
+  }
+
+  if (!publishNpm && !publishPypi && !publishGithub) {
+    console.warn('No publication targets selected. Aborting initialization.')
+    process.exit(1)
+  }
+
+  const contents = renderString(configTemplate, results)
+
+  await Bun.write(configFile, contents)
+
+  console.log(`Configuration file written to ${configPath}`)
 }
