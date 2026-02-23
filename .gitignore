@@ -5,6 +5,7 @@ node_modules
 out
 bin
 dist
+.bin-upload
 *.tgz
 
 # code coverage

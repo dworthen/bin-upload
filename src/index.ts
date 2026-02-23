@@ -30,7 +30,7 @@ const cli = meow(
     $ bin-upload publish
 `,
   {
-    version: '0.0.3',
+    version: '0.0.9',
     importMeta: import.meta,
     flags: {
       help: {

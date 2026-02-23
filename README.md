@@ -6,8 +6,8 @@ Easily distribute binaries via npm, pypi, and GitHub releases.
 
 `bin-upload` is a CLI tool built with [Bun](https://bun.sh) that packages and publishes pre-built binaries to multiple registries and platforms. It supports:
 
-- **npm** — Publishes a main package that depend on platform-specific binary packages using [optionalDependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#optionaldependencies). When the main package is installed, the corresponding platform-specific package containing the actual binary is also installed. This allows for downloading and installing only the necessary binary without relying on post-install scripts, which some package managers do not run for dependencies.
-- **PyPI** — Builds wheel (`.whl`) packages for each platform-specific tag. Tools such as `pip` and `uv` automatically install the correct wheel for the machine installing the package.
+- **npm** — Publishes a main package that depend on platform-specific binary packages using [optionalDependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#optionaldependencies).
+- **PyPI** — Builds wheel (`.whl`) packages for each platform-specific tag.
 - **GitHub Releases** — Creates releases and uploads archive assets (`.tar.gz` or `.zip`).
 
 ## Installation
@@ -38,6 +38,13 @@ uvx bin-upload <command>
 Download the appropriate binary for your platform from the [releases page](https://github.com/dworthen/bin-upload/releases).
 
 ## Quick Start
+
+**Requirements**
+
+The following must be installed and available on your path.
+
+- [npm](https://www.npmjs.com/): if publishing to npm
+- [uv](https://docs.astral.sh/uv/): if publishing to pypi
 
 1. **Initialize a configuration file:**
 
@@ -252,18 +259,26 @@ The `pack` command generates:
 - A **main package** that detects the user's platform (`process.platform` + `process.arch`) and delegates to the appropriate binary package.
 - **Platform-specific packages** listed as `optionalDependencies` in the main package, each containing the binary for that platform.
 
+Bin upload publishes a main npm package that depend on platform-specific binary packages using [optionalDependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#optionaldependencies). When the main package is installed, the corresponding platform-specific package containing the actual binary is also installed. This allows for downloading and installing only the necessary binary without relying on post-install scripts, which some package managers do not run for dependencies.
+
 > **Note:** musl Linux binaries cannot be distinguished from glibc Linux binaries via `process.platform`/`process.arch`, so they cannot be published to npm.
 
 ### PyPI
 
-The `pack` command builds platform-specific `.whl` (wheel) files. Each wheel contains:
+The `pack` command builds platform-specific wheel (`.whl`) files. Each wheel contains:
 
 - A Python wrapper module that locates and executes the bundled binary.
 - Console script entry points for CLI usage.
 
+Bin upload builds and published wheel (`.whl`) packages for each platform-specific tag. Only one PyPi package is created containing the platform-specific wheel files (unlike npm where each binary is published to its own npm package). Tools such as `pip` and `uv` automatically install the correct wheel for the machine installing the package.
+
 ### GitHub Releases
 
 The `pack` command creates `.tar.gz` or `.zip` archives. The `publish` command creates a GitHub release (if one doesn't exist for the tag) and uploads the archives as release assets.
+
+### Publishing
+
+The [npm](https://www.npmjs.com/) cli is used to publish to npm while [uv](https://docs.astral.sh/uv/) is used to publish to [PyPi](https://pypi.org/).
 
 ## Environment Variables
 

@@ -10,7 +10,7 @@ binaries:
   darwin-arm64: "./bin/darwin-arm64/bin-upload"
 pack:
   prePackCommand: "bun run build"
-  dir: "./dist"
+  dir: "./.bin-upload"
 npm:
   # readme and license files to include in the npm packages.
   readmeFile: "README.md"

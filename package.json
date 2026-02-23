@@ -9,7 +9,8 @@
     "check": "biome check",
     "build": "bun run ./scripts/build.ts",
     "pack": "bun run ./src/index.ts pack",
-    "publish": "bun run ./src/index.ts publish"
+    "publish": "bun run ./src/index.ts publish",
+    "docs": "docsify serve docs -p 3000"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",
@@ -17,7 +18,8 @@
     "@types/bun": "latest",
     "@types/validate-npm-package-name": "^4.0.2",
     "@types/yazl": "^3.3.0",
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "docsify-cli": "^4.4.4"
   },
   "peerDependencies": {
     "typescript": "^5"

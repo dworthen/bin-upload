@@ -1,16 +1,11 @@
 export const configTemplate = `binaries:
   # binaryId -> path to binary file
-  linux-x64: "./bin/linux-x64/bin-upload"
-  linux-x64-musl: "./bin/linux-x64-musl/bin-upload"
-  linux-arm64: "./bin/linux-arm64/bin-upload"
-  linux-arm64-musl: "./bin/linux-arm64-musl/bin-upload"
-  win-x64: "./bin/win-x64/bin-upload.exe"
-  win-arm64: "./bin/win-arm64/bin-upload.exe"
-  darwin-x64: "./bin/darwin-x64/bin-upload"
-  darwin-arm64: "./bin/darwin-arm64/bin-upload"
+<%- binaries.forEach(([binaryId, info]) => { %>
+  <%= binaryId %>: "<%= info.path %>"
+<%- }) %>
 pack:
   # prePackCommand: "bun run build"
-  dir: "./dist"
+  dir: "./.bin-upload"
 <%- if (npm) { %>
 npm:
   # readme and license files to include in the npm packages.
@@ -50,30 +45,12 @@ npm:
     # Therefore publishing musl linux binaries to npm is not possible since
     # there is no way to differentiate them from glibc linux binaries using process.platform and process.arch.
     # These packages will be dependencies of the main package.
-    linux-x64:
-      name: "<%= npm.name %>-linux-x64"
-      os: "linux"
-      arch: "x64"
-    linux-arm64:
-      name: "<%= npm.name %>-linux-arm64"
-      os: "linux"
-      arch: "arm64"
-    win-x64:
-      name: "<%= npm.name %>-win-x64"
-      os: "win32"
-      arch: "x64"
-    win-arm64:
-      name: "<%= npm.name %>-win-arm64"
-      os: "win32"
-      arch: "arm64"
-    darwin-x64:
-      name: "<%= npm.name %>-darwin-x64"
-      os: "darwin"
-      arch: "x64"
-    darwin-arm64:
-      name: "<%= npm.name %>-darwin-arm64"
-      os: "darwin"
-      arch: "arm64"
+<%- npmBinaries.forEach(([binaryId, info]) => { %>
+    <%= binaryId %>:
+      name: "<%= npm.name %>-<%= binaryId %>"
+      os: "<%= info.os %>"
+      arch: "<%= info.arch %>"
+<%- }) %>
   publish:
     # Arguments to pass to \`npm publish\`
     # https://docs.npmjs.com/cli/v11/commands/npm-publish
@@ -97,14 +74,9 @@ pypi:
     # binaryId: pypi platform tag
     # The pypi platform tag must be a valid wheel platform tag.
     # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/
-    linux-x64: "manylinux_2_17_x86_64"
-    linux-x64-musl: "musllinux_1_2_x86_64"
-    linux-arm64: "manylinux_2_17_aarch64"
-    linux-arm64-musl: "musllinux_1_2_aarch64"
-    win-x64: "win_amd64"
-    win-arm64: "win_arm64"
-    darwin-x64: "macosx_10_9_x86_64"
-    darwin-arm64: "macosx_11_0_arm64"
+<%- binaries.forEach(([binaryId, info]) => { %>
+    <%= binaryId %>: "<%= info.tag %>"
+<%- }) %>
   metadata:
     # Metadata fields for the pypi package.
     # https://packaging.python.org/en/latest/specifications/core-metadata/
@@ -160,14 +132,9 @@ github:
     # then the shorthand
     # binaryId -> format 
     # can be used instead of specifying the files.
-    linux-x64: "tar.gz"
-    linux-x64-musl: "tar.gz"
-    linux-arm64: "tar.gz"
-    linux-arm64-musl: "tar.gz"
-    win-x64: "zip"
-    win-arm64: "zip"
-    darwin-x64: "tar.gz"
-    darwin-arm64: "tar.gz"
+<%- binaries.forEach(([binaryId, info]) => { %>
+    <%= binaryId %>: "<%= info.format %>"
+<%- }) %>
     # Example of more control of creating archives
     # generates source.tar.gz to upload tp github releases.
     # source:

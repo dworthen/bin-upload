@@ -7,7 +7,7 @@ export async function getPackOutputDir(
   config: Config,
   source?: PackSource,
 ): Promise<string> {
-  const baseDir = config.pack?.dir ? config.pack.dir : 'dist'
+  const baseDir = config.pack?.dir ? config.pack.dir : '.bin-upload'
 
   const dir = resolve(baseDir, source ?? '')
   await mkdir(dir, { recursive: true })
