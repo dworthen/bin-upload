@@ -81,6 +81,9 @@ async function buildNpmPackages(config: Config): Promise<number> {
   const workerUrl = new URL('../workers/buildNpmPackage.ts', import.meta.url)
     .href
 
+  console.log(workerUrl)
+  console.log(await Bun.file(workerUrl).exists())
+
   const processOutputs = await Promise.all([
     ...Object.keys(config.npm!.binaryPackages).map(async (binaryId) => {
       const message = {

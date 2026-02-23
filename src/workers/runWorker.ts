@@ -8,21 +8,26 @@ export async function runWorker(
   message: Record<string, unknown>,
 ): Promise<number> {
   return new Promise((resolve) => {
-    const worker = new Worker(workerUrl)
+    try {
+      const worker = new Worker(workerUrl)
 
-    worker.addEventListener('message', (event: { data: WorkerMessage }) => {
-      const { type, message } = event.data
-      if (type === 'log') {
-        console.log(message)
-      } else if (type === 'error') {
-        console.error(message)
-      }
-    })
+      worker.addEventListener('message', (event: { data: WorkerMessage }) => {
+        const { type, message } = event.data
+        if (type === 'log') {
+          console.log(message)
+        } else if (type === 'error') {
+          console.error(message)
+        }
+      })
 
-    worker.addEventListener('close', (event) => {
-      resolve(event.code)
-    })
+      worker.addEventListener('close', (event) => {
+        resolve(event.code)
+      })
 
-    worker.postMessage(message)
+      worker.postMessage(message)
+    } catch (error) {
+      console.error(`Failed to start worker: ${error}`)
+      resolve(1)
+    }
   })
 }

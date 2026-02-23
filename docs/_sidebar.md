@@ -1,0 +1,13 @@
+- Getting Started
+  - [Overview](/)
+  - [Quick Start](/quick-start)
+  - [How it Works](/how-it-works)
+- Customization
+  - [Configuration](/configuration)
+- CLI
+  - [Commands](/commands)
+  - [Pack](/pack)
+  - [Publish](/publishing)
+- Tutorials
+  - [Bun CLI](/tutorials/bun-cli)
+  <!-- - [Go CLI](/tutorials/go-cli) -->

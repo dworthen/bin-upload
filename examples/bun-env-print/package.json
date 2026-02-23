@@ -1,0 +1,17 @@
+{
+  "name": "bun-env-print",
+  "module": "index.ts",
+  "devDependencies": {
+    "@d-dev/bin-upload": "^0.0.9",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "private": true,
+  "scripts": {
+    "build": "bun run build.ts",
+    "pack": "bin-upload pack"
+  },
+  "type": "module"
+}

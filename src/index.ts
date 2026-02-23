@@ -11,6 +11,10 @@ const commands: Record<string, (argv: string[]) => Promise<void>> = {
   publish: publish,
 }
 
+process.on('uncaughtException', (error) => {
+  throw error
+})
+
 const cli = meow(
   `
   Usage

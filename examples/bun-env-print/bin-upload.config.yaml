@@ -1,0 +1,80 @@
+binaries:
+  linux-x64: "./bin/linux-x64/bun-env-print"
+  linux-x64-musl: "./bin/linux-x64-musl/bun-env-print"
+  linux-arm64: "./bin/linux-arm64/bun-env-print"
+  linux-arm64-musl: "./bin/linux-arm64-musl/bun-env-print"
+  win-x64: "./bin/win-x64/bun-env-print.exe"
+  darwin-x64: "./bin/darwin-x64/bun-env-print"
+  darwin-arm64: "./bin/darwin-arm64/bun-env-print"
+
+pack:
+  prePackCommand: "bun run build"
+  dir: "./.bin-upload"
+
+npm:
+  readmeFile: "README.md"
+  packageJson:
+    name: "@d-dev/bun-env-print"
+    version: <%= vars.gitTag %>
+    description: "prints env variables"
+    license: "MIT"
+  binaryPackages:
+    linux-x64:
+      name: "@d-dev/bun-env-print-linux-x64"
+      os: "linux"
+      arch: "x64"
+    linux-arm64:
+      name: "@d-dev/bun-env-print-linux-arm64"
+      os: "linux"
+      arch: "arm64"
+    win-x64:
+      name: "@d-dev/bun-env-print-win-x64"
+      os: "win32"
+      arch: "x64"
+    darwin-x64:
+      name: "@d-dev/bun-env-print-darwin-x64"
+      os: "darwin"
+      arch: "x64"
+    darwin-arm64:
+      name: "@d-dev/bun-env-print-darwin-arm64"
+      os: "darwin"
+      arch: "arm64"
+  publish:
+    access: "public"
+    tag: "latest"
+    "registry=https://registry.npmjs.org/": true
+    "//registry.npmjs.org/:_authToken=<%= env.NPM_TOKEN %>": true
+
+pypi:
+  readmeFile: "README.md"
+  platformTags:
+    linux-x64: "manylinux_2_17_x86_64"
+    linux-x64-musl: "musllinux_1_2_x86_64"
+    linux-arm64: "manylinux_2_17_aarch64"
+    linux-arm64-musl: "musllinux_1_2_aarch64"
+    win-x64: "win_amd64"
+    darwin-x64: "macosx_10_9_x86_64"
+    darwin-arm64: "macosx_11_0_arm64"
+  metadata:
+    Name: "bun-env-print"
+    Version: <%= vars.gitTag %>
+    Summary: "prints env variables"
+    License-Expression: "MIT"
+    Requires-Python: ">=3.11"
+  publish:
+    token: "<%= env.PYPI_TOKEN %>"
+
+github:
+  owner: "dworthen"
+  repo: "bin-upload"
+  token: "<%= env.GITHUB_TOKEN %>"
+  release:
+    tag_name: "v<%= vars.gitTag %>"
+  archives:
+    linux-x64: "tar.gz"
+    linux-x64-musl: "tar.gz"
+    linux-arm64: "tar.gz"
+    linux-arm64-musl: "tar.gz"
+    win-x64: "zip"
+    darwin-x64: "tar.gz"
+    darwin-arm64: "tar.gz"
