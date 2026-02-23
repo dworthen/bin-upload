@@ -75,8 +75,8 @@ npm:
     # Not needed if publishing from a trusted publisher
     # such as GitHub actions.
     # https://docs.npmjs.com/trusted-publishers
-    "registry=https://registry.npmjs.org/": true
-    "//registry.npmjs.org/:_authToken=<%= env.NPM_TOKEN %>": true
+    # "registry=https://registry.npmjs.org/": true
+    # "//registry.npmjs.org/:_authToken=<%= env.NPM_TOKEN %>": true
     # may also set with CLI args e.g.,
     # bin-upload publish -s "npm.publish.registry\=https://registry\.npmjs\.org/" -s "npm.publish.//registry\.npmjs\.org/:_authToken\=some-token"
 pypi:
@@ -107,14 +107,14 @@ pypi:
     Requires-Python: ">=3.11"
     Project-URL: source, https://github.com/dworthen/bin-upload
     keywords: "bin-upload,binary,pypi,npm,github,publish"
-  publish:
-    # Arguments to pass to `uv publish`
-    # https://docs.astral.sh/uv/guides/package/
-    # Token not needed if publishing from a trusted publisher such as GitHub actions.
-    # https://docs.pypi.org/trusted-publishers/adding-a-publisher/
-    token: "<%= env.PYPI_TOKEN %>"
-    # may aslo set with CLI args e.g.,
-    # bin-upload publish -s "pypi.publish.token=some-token"
+  # publish:
+  #   # Arguments to pass to `uv publish`
+  #   # https://docs.astral.sh/uv/guides/package/
+  #   # Token not needed if publishing from a trusted publisher such as GitHub actions.
+  #   # https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+  #   token: "<%= env.PYPI_TOKEN %>"
+  #   # may aslo set with CLI args e.g.,
+  #   # bin-upload publish -s "pypi.publish.token=some-token"
 github:
   owner: "dworthen"
   repo: "bin-upload"
@@ -129,7 +129,7 @@ github:
     tag_name: "v<%= vars.gitTag %>"
     # name: "v1.0.0"
     # body: "Release v1.0.0"
-    draft: true
+    # draft: true
   archives:
     # binaryId: archive format ("tar.gz" or "zip")
     linux-x64: "tar.gz"

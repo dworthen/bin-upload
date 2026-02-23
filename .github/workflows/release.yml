@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  metadata: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Pack
+        run: uvx bin-upload pack
+
+      - name: Publish
+        run: uvx bin-upload publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
