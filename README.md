@@ -308,7 +308,6 @@ on:
 
 permissions:
   contents: write
-  metadata: read
 
 jobs:
   release:
@@ -318,6 +317,9 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
+
+      - name: Build binaries
+        run: COMMAND TO BUILD YOUR BINARIES
 
       - name: Pack
         run: uvx bin-upload pack
