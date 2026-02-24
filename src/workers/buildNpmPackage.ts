@@ -6,8 +6,6 @@ import { getPackOutputDir } from '@/lib/paths'
 import { binIndexJs, mainPkgIndexJs } from '@/templates/npm'
 import { renderString } from '@/templates/renderString'
 
-declare var self: Worker
-
 function packageName(config: Config, binaryId?: string): string {
   return binaryId
     ? config.npm!.binaryPackages[binaryId]!.name
@@ -32,7 +30,7 @@ function constructBinaryPaths(
 }
 
 function constructPackageJson(config: Config, binaryId?: string): string {
-  const pkgJson = config.npm!.packageJson
+  const pkgJson = structuredClone(config.npm!.packageJson)
   pkgJson.name = packageName(config, binaryId)
   pkgJson.version = config.npm!.packageJson.version
   pkgJson.type = 'module'

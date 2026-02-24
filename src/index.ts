@@ -14,6 +14,8 @@ const commands: Record<string, (argv: string[]) => Promise<void>> = {
 process.on('uncaughtException', (error) => {
   if (error instanceof Error && error.name === 'ExitPromptError') {
     console.log('👋 until next time!')
+  } else {
+    throw error
   }
 })
 
@@ -36,7 +38,7 @@ const cli = meow(
     $ bin-upload publish
 `,
   {
-    version: '0.0.10',
+    version: '0.0.12',
     importMeta: import.meta,
     flags: {
       help: {

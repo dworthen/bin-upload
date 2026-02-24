@@ -1,4 +1,4 @@
-import { mkdir, readFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import { type Archive } from '@/lib/archive/Archive'
 import { createArchive } from '@/lib/archive/createArchive'
@@ -6,12 +6,6 @@ import { type Config } from '@/lib/config'
 import { getPackOutputDir } from '@/lib/paths'
 import { initPy, wheelMetadata } from '@/templates/pypi'
 import { renderString } from '@/templates/renderString'
-
-declare var self: Worker
-type BuildPyPiPackageMessage = {
-  config: Config
-  binaryId: string
-}
 
 function packageName(config: Config): string {
   return config.pypi!.metadata.Name.replace(/-/g, '_')

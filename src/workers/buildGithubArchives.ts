@@ -1,12 +1,10 @@
-import { mkdir, readFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import { Glob } from 'bun'
 import { type Archive } from '@/lib/archive/Archive'
 import { createArchive } from '@/lib/archive/createArchive'
 import { type Config, type FileGlob } from '@/lib/config'
 import { getPackOutputDir } from '@/lib/paths'
-
-declare var self: Worker
 
 type FileDescriptor = {
   fullPath: string
