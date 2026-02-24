@@ -12,7 +12,9 @@ const commands: Record<string, (argv: string[]) => Promise<void>> = {
 }
 
 process.on('uncaughtException', (error) => {
-  throw error
+  if (error instanceof Error && error.name === 'ExitPromptError') {
+    console.log('👋 until next time!')
+  }
 })
 
 const cli = meow(

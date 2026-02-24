@@ -91,9 +91,9 @@ async function buildNpmPackages(config: Config): Promise<number> {
         binaryId,
       }
 
-      return await runWorker(workerUrl, message)
+      return await runWorker('buildNpm', message)
     }),
-    runWorker(workerUrl, { config }),
+    runWorker('buildNpm', { config }),
   ])
 
   return processOutputs.some((code) => code !== 0) ? 1 : 0
@@ -117,7 +117,7 @@ async function buildPyPiPackage(config: Config): Promise<number> {
         binaryId,
       }
 
-      return await runWorker(workerUrl, message)
+      return await runWorker('buildPypi', message)
     }),
   ])
 
@@ -144,7 +144,7 @@ async function buildGithubArchives(config: Config): Promise<number> {
         archiveId,
       }
 
-      return await runWorker(workerUrl, message)
+      return await runWorker('buildGithub', message)
     }),
   ])
 

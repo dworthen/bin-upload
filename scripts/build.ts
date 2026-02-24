@@ -16,6 +16,7 @@ async function buildTarget(target: string, outFile: string): Promise<void> {
   await Bun.build({
     entrypoints: [
       './src/index.ts',
+      './src/worker.ts',
       './src/workers/buildNpmPackage.ts',
       './src/workers/buildPypiPackage.ts',
       './src/workers/buildGithubArchives.ts',
