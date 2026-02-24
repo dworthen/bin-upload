@@ -8,11 +8,6 @@ import { renderString } from '@/templates/renderString'
 
 declare var self: Worker
 
-type BuildNpmPackageMessage = {
-  config: Config
-  binaryId?: string
-}
-
 function packageName(config: Config, binaryId?: string): string {
   return binaryId
     ? config.npm!.binaryPackages[binaryId]!.name
@@ -70,14 +65,7 @@ function constructPackageJson(config: Config, binaryId?: string): string {
       return acc
     }, {})
   } else {
-    const binInfo = config.npm!.binaryPackages[binaryId]
-    if (!binInfo) {
-      postMessage({
-        type: 'error',
-        message: `Error constructing package.json: No binary package info found for binaryId "${binaryId}". Please ensure "npm.binaryPackages" in your config includes a mapping for this binaryId.`,
-      })
-      process.exit(1)
-    }
+    const binInfo = config.npm!.binaryPackages[binaryId]!
     pkgJson.os = [binInfo.os]
     pkgJson.cpu = [binInfo.arch]
     // @ts-expect-error
@@ -115,67 +103,58 @@ function constructIndexJs(config: Config, binaryId?: string): string {
   return constructMainIndexJs(config)
 }
 
-self.addEventListener(
-  'message',
-  async (event: { data: BuildNpmPackageMessage }) => {
-    const { config, binaryId } = event.data
+export async function buildNpmPackage(
+  config: Config,
+  binaryId?: string,
+): Promise<number> {
+  const tarball = tarballName(config, binaryId)
+  const pkgName = packageName(config, binaryId)
 
-    const tarball = tarballName(config, binaryId)
-    const pkgName = packageName(config, binaryId)
+  const building = `Building npm package ${pkgName}.`
 
-    const building = `Building npm package ${pkgName}.`
+  try {
+    console.log(building)
 
-    try {
-      postMessage({
-        type: 'log',
-        message: building,
-      })
+    const outDirPath = await getPackOutputDir(config, 'npm')
+    const archivePath = resolve(outDirPath, tarball)
 
-      const outDirPath = await getPackOutputDir(config, 'npm')
-      const archivePath = resolve(outDirPath, tarball)
+    const archive = createArchive('tar.gz', archivePath)
 
-      const archive = createArchive('tar.gz', archivePath)
+    archive.addFile(
+      constructPackageJson(config, binaryId),
+      'package/package.json',
+    )
+    archive.addFile(constructIndexJs(config, binaryId), 'package/index.js')
 
-      archive.addFile(
-        constructPackageJson(config, binaryId),
-        'package/package.json',
-      )
-      archive.addFile(constructIndexJs(config, binaryId), 'package/index.js')
-
-      if (config.npm!.readmeFile && config.npm!.readmeFile.trim() !== '') {
-        const filePath = resolve(config.npm!.readmeFile)
-        const filename = basename(filePath)
-        const file = await readFile(filePath)
-        archive.addFile(file, `package/${filename}`)
-      }
-
-      if (config.npm!.licenseFile && config.npm!.licenseFile.trim() !== '') {
-        const filePath = resolve(config.npm!.licenseFile)
-        const filename = basename(filePath)
-        const file = await readFile(filePath)
-        archive.addFile(file, `package/${filename}`)
-      }
-
-      if (binaryId) {
-        const filename = basename(config.binaries[binaryId]!)
-        const binFile = resolve(config.binaries[binaryId]!)
-        const file = await readFile(binFile)
-        archive.addFile(file, `package/bin/${filename}`)
-      }
-
-      await archive.end()
-
-      postMessage({
-        type: 'log',
-        message: `Finished ${building.toLowerCase()}`,
-      })
-      process.exit(0)
-    } catch (error) {
-      postMessage({
-        type: 'error',
-        message: `Error ${building.toLowerCase()}: ${error instanceof Error ? error.message : String(error)}`,
-      })
-      process.exit(1)
+    if (config.npm!.readmeFile && config.npm!.readmeFile.trim() !== '') {
+      const filePath = resolve(config.npm!.readmeFile)
+      const filename = basename(filePath)
+      const file = await readFile(filePath)
+      archive.addFile(file, `package/${filename}`)
     }
-  },
-)
+
+    if (config.npm!.licenseFile && config.npm!.licenseFile.trim() !== '') {
+      const filePath = resolve(config.npm!.licenseFile)
+      const filename = basename(filePath)
+      const file = await readFile(filePath)
+      archive.addFile(file, `package/${filename}`)
+    }
+
+    if (binaryId) {
+      const filename = basename(config.binaries[binaryId]!)
+      const binFile = resolve(config.binaries[binaryId]!)
+      const file = await readFile(binFile)
+      archive.addFile(file, `package/bin/${filename}`)
+    }
+
+    await archive.end()
+
+    console.log(`Finished ${building.toLowerCase()}`)
+    return 0
+  } catch (error) {
+    console.error(
+      `Error ${building.toLowerCase()}: ${error instanceof Error ? error.message : String(error)}`,
+    )
+    return 1
+  }
+}

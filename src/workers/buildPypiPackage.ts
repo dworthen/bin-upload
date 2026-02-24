@@ -18,15 +18,7 @@ function packageName(config: Config): string {
 }
 
 function tag(config: Config, binaryId: string): string {
-  if (!config.pypi!.platformTags[binaryId]) {
-    postMessage({
-      type: 'error',
-      message: `Error building PyPI package: No platform tag found for binaryId "${binaryId}". Please ensure "pypi.platformTags" in your config includes a mapping for this binaryId.`,
-    })
-    process.exit(1)
-  }
-
-  return `py3-none-${config.pypi!.platformTags[binaryId]}`
+  return `py3-none-${config.pypi!.platformTags[binaryId]!}`
 }
 
 function version(config: Config): string {
@@ -54,11 +46,9 @@ async function addInitPyToArchive(
 ): Promise<[string, string, string]> {
   const binPath = config.binaries[binaryId]
   if (!binPath) {
-    postMessage({
-      type: 'error',
-      message: `Error building PyPI package: No binary path found for binaryId "${binaryId}". Please ensure "binaries" in your config includes a mapping for this binaryId.`,
-    })
-    process.exit(1)
+    throw new Error(
+      `Error building PyPI package: No binary path found for binaryId "${binaryId}". Please ensure "binaries" in your config includes a mapping for this binaryId.`,
+    )
   }
   const binName = basename(binPath)
   const contents = renderString(initPy, {
@@ -76,11 +66,9 @@ async function addBin(
 ): Promise<[string, string, string]> {
   let binPath = config.binaries[binaryId]
   if (!binPath) {
-    postMessage({
-      type: 'error',
-      message: `Error building PyPI package: No binary path found for binaryId "${binaryId}". Please ensure "binaries" in your config includes a mapping for this binaryId.`,
-    })
-    process.exit(1)
+    throw new Error(
+      `Error building PyPI package: No binary path found for binaryId "${binaryId}". Please ensure "binaries" in your config includes a mapping for this binaryId.`,
+    )
   }
   binPath = resolve(binPath)
   const binName = basename(binPath)
@@ -146,53 +134,45 @@ async function addWheelMetadata(
   return archive.addFile(contents, `${dist}/WHEEL`)
 }
 
-self.addEventListener(
-  'message',
-  async (event: { data: BuildPyPiPackageMessage }) => {
-    const { config, binaryId } = event.data
+export async function buildPyPiPackage(
+  config: Config,
+  binaryId: string,
+): Promise<number> {
+  const wheel = wheelName(config, binaryId)
+  const dist = distName(config)
 
-    const wheel = wheelName(config, binaryId)
-    const dist = distName(config)
+  const building = `Building PyPI package ${wheel}.`
 
-    const building = `Building PyPI package ${wheel}.`
+  try {
+    console.log(building)
 
-    try {
-      postMessage({
-        type: 'log',
-        message: building,
-      })
+    const outDirPath = await getPackOutputDir(config, 'pypi')
+    const archivePath = resolve(outDirPath, wheel)
+    const archive = createArchive('zip', archivePath)
 
-      const outDirPath = await getPackOutputDir(config, 'pypi')
-      const archivePath = resolve(outDirPath, wheel)
-      const archive = createArchive('zip', archivePath)
+    const results = await Promise.all([
+      addInitPyToArchive(archive, config, binaryId),
+      addBin(archive, config, binaryId),
+      addEntryPoints(archive, config),
+      addMetadata(archive, config),
+      addWheelMetadata(archive, config, binaryId),
+    ])
 
-      const results = await Promise.all([
-        addInitPyToArchive(archive, config, binaryId),
-        addBin(archive, config, binaryId),
-        addEntryPoints(archive, config),
-        addMetadata(archive, config),
-        addWheelMetadata(archive, config, binaryId),
-      ])
+    const recordLines = results.map(
+      ([filePath, hash, size]) => `${filePath},sha256=${hash},${size}`,
+    )
+    recordLines.push(`${dist}/RECORD,,`)
 
-      const recordLines = results.map(
-        ([filePath, hash, size]) => `${filePath},sha256=${hash},${size}`,
-      )
-      recordLines.push(`${dist}/RECORD,,`)
+    archive.addFile(recordLines.join('\n'), `${dist}/RECORD`)
+    await archive.end()
 
-      archive.addFile(recordLines.join('\n'), `${dist}/RECORD`)
-      await archive.end()
+    console.log(`Finished ${building.toLowerCase()}`)
+    return 0
+  } catch (err) {
+    console.error(
+      `Error ${building.toLowerCase()}: ${err instanceof Error ? err.message : String(err)}`,
+    )
 
-      postMessage({
-        type: 'log',
-        message: `Finished ${building.toLowerCase()}`,
-      })
-      process.exit(0)
-    } catch (err) {
-      postMessage({
-        type: 'error',
-        message: `Error ${building.toLowerCase()}: ${err instanceof Error ? err.message : String(err)}`,
-      })
-      process.exit(1)
-    }
-  },
-)
+    return 1
+  }
+}

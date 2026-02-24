@@ -14,13 +14,7 @@ const builds: Record<string, string> = {
 async function buildTarget(target: string, outFile: string): Promise<void> {
   console.log(`Building for target: ${target}...`)
   await Bun.build({
-    entrypoints: [
-      './src/index.ts',
-      './src/worker.ts',
-      './src/workers/buildNpmPackage.ts',
-      './src/workers/buildPypiPackage.ts',
-      './src/workers/buildGithubArchives.ts',
-    ],
+    entrypoints: ['./src/index.ts'],
     compile: {
       // @ts-expect-error
       target,

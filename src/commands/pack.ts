@@ -4,7 +4,9 @@ import { resolve } from 'node:path'
 import meow from 'meow'
 import { type Config, loadConfig } from '@/lib/config'
 import { getPackOutputDir } from '@/lib/paths'
-import { runWorker } from '@/workers/runWorker'
+import { buildGithubArchive } from '@/workers/buildGithubArchives'
+import { buildNpmPackage } from '@/workers/buildNpmPackage'
+import { buildPyPiPackage } from '@/workers/buildPypiPackage'
 
 async function validate(config: Config): Promise<void> {
   const nonExistingBinaries = (
@@ -78,28 +80,17 @@ async function buildNpmPackages(config: Config): Promise<number> {
     return 0
   }
 
-  const workerUrl = new URL('../workers/buildNpmPackage.ts', import.meta.url)
-    .href
-
-  console.log(workerUrl)
-  console.log(await Bun.file(workerUrl).exists())
-
   const processOutputs = await Promise.all([
-    ...Object.keys(config.npm!.binaryPackages).map(async (binaryId) => {
-      const message = {
-        config,
-        binaryId,
-      }
-
-      return await runWorker('buildNpm', message)
-    }),
-    runWorker('buildNpm', { config }),
+    ...Object.keys(config.npm!.binaryPackages).map(
+      async (binaryId) => await buildNpmPackage(config, binaryId),
+    ),
+    buildNpmPackage(config),
   ])
 
   return processOutputs.some((code) => code !== 0) ? 1 : 0
 }
 
-async function buildPyPiPackage(config: Config): Promise<number> {
+async function buildPyPiPackages(config: Config): Promise<number> {
   if (!config.pypi) {
     console.warn(
       'PyPI configuration is missing in the config file. Skipping packing PyPI packages.',
@@ -107,18 +98,10 @@ async function buildPyPiPackage(config: Config): Promise<number> {
     return 0
   }
 
-  const workerUrl = new URL('../workers/buildPypiPackage.ts', import.meta.url)
-    .href
-
   const processOutputs = await Promise.all([
-    ...Object.keys(config.pypi!.platformTags).map(async (binaryId) => {
-      const message = {
-        config,
-        binaryId,
-      }
-
-      return await runWorker('buildPypi', message)
-    }),
+    ...Object.keys(config.pypi!.platformTags).map(
+      async (binaryId) => await buildPyPiPackage(config, binaryId),
+    ),
   ])
 
   return processOutputs.some((code) => code !== 0) ? 1 : 0
@@ -132,20 +115,10 @@ async function buildGithubArchives(config: Config): Promise<number> {
     return 0
   }
 
-  const workerUrl = new URL(
-    '../workers/buildGithubArchives.ts',
-    import.meta.url,
-  ).href
-
   const processOutputs = await Promise.all([
-    ...Object.keys(config.github!.archives).map(async (archiveId) => {
-      const message = {
-        config,
-        archiveId,
-      }
-
-      return await runWorker('buildGithub', message)
-    }),
+    ...Object.keys(config.github!.archives).map(
+      async (archiveId) => await buildGithubArchive(config, archiveId),
+    ),
   ])
 
   return processOutputs.some((code) => code !== 0) ? 1 : 0
@@ -225,7 +198,7 @@ export async function pack(argv: string[]) {
     cmds.push(buildNpmPackages(config))
   }
   if (cli.flags.source === 'all' || cli.flags.source === 'pypi') {
-    cmds.push(buildPyPiPackage(config))
+    cmds.push(buildPyPiPackages(config))
   }
   if (cli.flags.source === 'all' || cli.flags.source === 'github') {
     cmds.push(buildGithubArchives(config))

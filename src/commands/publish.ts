@@ -29,12 +29,15 @@ async function publishToNpm(config: Config): Promise<number> {
     matches.push(matchingPath)
   }
 
-  const results: number[] = []
-  for (const assetPath of matches) {
-    results.push(await uploadToNpm(config, assetPath))
-  }
+  const results = await Promise.all(
+    matches.map(async (assetPath) => await uploadToNpm(config, assetPath)),
+  )
 
-  console.log(`Finished publishing npm packages.`)
+  if (results.some((code) => code !== 0)) {
+    console.error(`Error publishing one or more npm packages.`)
+  } else {
+    console.log(`Finished publishing npm packages.`)
+  }
 
   return results.some((code) => code !== 0) ? 1 : 0
 }
@@ -97,18 +100,18 @@ async function publishGithub(config: Config): Promise<number> {
     matches.push(matchingPath)
   }
 
-  // const results = await Promise.all(
-  //   matches.map(async (assetPath) => {
-  //     return await uploadReleaseAsset(config, releaseId, assetPath)
-  //   }),
-  // )
+  const results = await Promise.all(
+    matches.map(
+      async (assetPath) =>
+        await uploadReleaseAsset(config, releaseInfo, assetPath),
+    ),
+  )
 
-  const results: number[] = []
-  for (const assetPath of matches) {
-    results.push(await uploadReleaseAsset(config, releaseInfo, assetPath))
+  if (results.some((code) => code !== 0)) {
+    console.error(`Error publishing one or more GitHub release assets.`)
+  } else {
+    console.log(`Finished publishing GitHub releases.`)
   }
-
-  console.log(`Finished publishing GitHub releases.`)
 
   return results.some((code) => code !== 0) ? 1 : 0
 }
@@ -177,17 +180,17 @@ export async function publish(argv: string[]) {
     console.log('Loaded configuration:')
     console.log(Bun.YAML.stringify(config, null, 2))
   }
-
-  const results: number[] = []
+  const cmds: Array<Promise<number>> = []
   if (cli.flags.source === 'all' || cli.flags.source === 'npm') {
-    results.push(await publishToNpm(config))
+    cmds.push(publishToNpm(config))
   }
   if (cli.flags.source === 'all' || cli.flags.source === 'pypi') {
-    results.push(await publishPypi(config))
+    cmds.push(publishPypi(config))
   }
   if (cli.flags.source === 'all' || cli.flags.source === 'github') {
-    results.push(await publishGithub(config))
+    cmds.push(publishGithub(config))
   }
+  const results = await Promise.all(cmds)
 
   process.exit(results.some((code) => code !== 0) ? 1 : 0)
 }

@@ -8,11 +8,6 @@ import { getPackOutputDir } from '@/lib/paths'
 
 declare var self: Worker
 
-type BuildGithubArchivesMessage = {
-  config: Config
-  archiveId: string
-}
-
 type FileDescriptor = {
   fullPath: string
   relativePath: string
@@ -60,11 +55,9 @@ function getFiles(config: Config, archiveId: string): FileDescriptor[] {
   if (typeof archiveConfig === 'string') {
     const relativeFilePath = config.binaries[archiveId]
     if (!relativeFilePath) {
-      postMessage({
-        type: 'error',
-        message: `Error building GitHub archive: No binary found for archiveId "${archiveId}". Please ensure "binaries" in your config includes a mapping for this archiveId.`,
-      })
-      process.exit(1)
+      throw new Error(
+        `Error building GitHub archive: No binary found for archiveId "${archiveId}". Please ensure "binaries" in your config includes a mapping for this archiveId.`,
+      )
     }
 
     const absoluteFilePath = resolve(relativeFilePath)
@@ -87,40 +80,29 @@ async function addFileToArchive(
   archive.addFile(f, file.relativePath)
 }
 
-self.addEventListener(
-  'message',
-  async (event: MessageEvent<BuildGithubArchivesMessage>) => {
-    const { config, archiveId } = event.data
+export async function buildGithubArchive(
+  config: Config,
+  archiveId: string,
+): Promise<number> {
+  const archiveName = getGithubArchiveName(config, archiveId)
+  const building = `Building GitHub archive ${archiveName}`
 
-    const archiveName = getGithubArchiveName(config, archiveId)
-    const building = `Building GitHub archive ${archiveName}`
+  try {
+    console.log(building)
 
-    try {
-      postMessage({
-        type: 'log',
-        message: building,
-      })
-
-      const archiveConfig = config.github!.archives[archiveId]!
-      const format =
-        typeof archiveConfig === 'string' ? archiveConfig : archiveConfig.format
-      const outputDir = await getPackOutputDir(config, 'github')
-      const archivePath = resolve(outputDir, archiveName)
-      const archive = createArchive(format, archivePath)
-      const files = getFiles(config, archiveId)
-      await Promise.all(files.map((file) => addFileToArchive(archive, file)))
-      await archive.end()
-      postMessage({
-        type: 'log',
-        message: `Finished ${building.toLowerCase()}`,
-      })
-      process.exit(0)
-    } catch (error) {
-      postMessage({
-        type: 'error',
-        message: `Error building GitHub archive ${archiveName}: ${error}`,
-      })
-      process.exit(1)
-    }
-  },
-)
+    const archiveConfig = config.github!.archives[archiveId]!
+    const format =
+      typeof archiveConfig === 'string' ? archiveConfig : archiveConfig.format
+    const outputDir = await getPackOutputDir(config, 'github')
+    const archivePath = resolve(outputDir, archiveName)
+    const archive = createArchive(format, archivePath)
+    const files = getFiles(config, archiveId)
+    await Promise.all(files.map((file) => addFileToArchive(archive, file)))
+    await archive.end()
+    console.log(`Finished ${building.toLowerCase()}`)
+    return 0
+  } catch (error) {
+    console.error(`Error building GitHub archive ${archiveName}: ${error}`)
+    return 1
+  }
+}
