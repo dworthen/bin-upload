@@ -1,6 +1,6 @@
 # How it Works
 
-## npm
+## NPM
 
 The `pack` command generates:
 

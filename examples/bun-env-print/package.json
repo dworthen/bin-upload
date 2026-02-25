@@ -2,7 +2,7 @@
   "name": "bun-env-print",
   "module": "index.ts",
   "devDependencies": {
-    "@d-dev/bin-upload": "^0.0.9",
+    "@d-dev/bin-upload": "^0.0.12",
     "@types/bun": "latest"
   },
   "peerDependencies": {
@@ -11,7 +11,8 @@
   "private": true,
   "scripts": {
     "build": "bun run build.ts",
-    "pack": "bin-upload pack"
+    "pack": "bin-upload pack",
+    "publish": "bin-upload publish"
   },
   "type": "module"
 }

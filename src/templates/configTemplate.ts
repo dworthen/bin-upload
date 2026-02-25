@@ -4,17 +4,15 @@ export const configTemplate = `binaries:
   <%= binaryId %>: "<%= info.path %>"
 <%- }) %>
 pack:
-  # prePackCommand: "bun run build"
-  dir: "./.bin-upload"
+  # prePackCommand: "bun run build" # Optional command to run before packing
+  dir: "./.bin-upload" # Output directory for packed artifacts
 <%- if (npm) { %>
 npm:
-  # readme and license files to include in the npm packages.
   readmeFile: "README.md"
   licenseFile: "LICENSE"
   packageJson:
     # packageJson values
     # https://docs.npmjs.com/cli/v11/configuring-npm/package-json
-    # The name is the name of the primary npm package users install.
     name: "<%= npm.name %>"
     version: <%= '<%= vars.gitTag %>' %>
 <%- if (npm.description) { %>
@@ -36,15 +34,11 @@ npm:
 <%- }) %>
 <%- } %>
   binaryPackages:
-    # A subset of binaryIds that should be published as separate packages on npm.
-    # binaryId -> { name, os, arch }
-    # as defined by node's process.platform and process.arch
+    # binaryId -> { name, os, arch } using Node.js process.platform/process.arch values
     # https://nodejs.org/docs/latest-v24.x/api/process.html#processplatform
     # https://nodejs.org/docs/latest-v24.x/api/process.html#processarch
-    # The os and arch values must match a valid combination of process.platform and process.arch.
-    # Therefore publishing musl linux binaries to npm is not possible since
-    # there is no way to differentiate them from glibc linux binaries using process.platform and process.arch.
-    # These packages will be dependencies of the main package.
+    # Note: It is not possible to publish musl linux binaries to
+    # NPM since you cannot identify binaries using musl with platform/arch.
 <%- npmBinaries.forEach(([binaryId, info]) => { %>
     <%= binaryId %>:
       name: "<%= npm.name %>-<%= binaryId %>"
@@ -58,21 +52,18 @@ npm:
     tag: "latest"
     # Publishing with granular access token
     # Not needed if publishing from a trusted publisher
-    # such as GitHub actions.
     # https://docs.npmjs.com/trusted-publishers
     "registry=https://registry.npmjs.org/": true
     "//registry.npmjs.org/:_authToken=<%= '<%= env.NPM_TOKEN %>' %>": true
     # may also set with CLI args e.g.,
-    # bin-upload publish -s "npm.publish.registry=https://registry.npmjs.org/" -s "npm.publish.//registry.npmjs.org/:_authToken=some-token"
+    # bin-upload publish -s "npm.publish.registry\\=https://registry\\.npmjs\\.org/" -s "npm.publish.//registry\\.npmjs\\.org/:_authToken\\=some-token"
 <%- } %>
 <%- if (pypi) { %>
 pypi:
   # readme file to include in the pypi package.
   readmeFile: "README.md"
   platformTags:
-    # A subset of binaryIds that should be published to pypi.
-    # binaryId: pypi platform tag
-    # The pypi platform tag must be a valid wheel platform tag.
+    # binaryId -> wheel platform tag
     # https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/
 <%- binaries.forEach(([binaryId, info]) => { %>
     <%= binaryId %>: "<%= info.tag %>"
@@ -102,7 +93,9 @@ pypi:
   publish:
     # Arguments to pass to \`uv publish\`
     # https://docs.astral.sh/uv/guides/package/
-    # Token not needed if publishing from a trusted publisher such as GitHub actions.
+    #
+    # Publishing with granular access token
+    # Not needed if publishing from a trusted publisher
     # https://docs.pypi.org/trusted-publishers/adding-a-publisher/
     token: "<%= '<%= env.PYPI_TOKEN %>' %>"
     # may aslo set with CLI args e.g.,
@@ -112,6 +105,9 @@ pypi:
 github:
   owner: "<%= gh.owner %>"
   repo: "<%= gh.repo %>"
+  # Token should have the following repository level permissions
+  # Metadata read
+  # Contents read and write
   token: "<%= '<%= env.GITHUB_TOKEN %>' %>"
   release:
     # Arguments to pass to gh release api
@@ -123,15 +119,8 @@ github:
     tag_name: "v<%= '<%= vars.gitTag %>' %>"
     # name: "v1.0.0"
     # body: "Release v1.0.0"
-    # draft: true
   archives:
-    # archiveName -> { format, files }
-    # format can be "tar.gz" or "zip"
-    # files is an array of file patterns to include in the archive.
-    # If the archiveName matches a binaryId and only contains the binary file, 
-    # then the shorthand
-    # binaryId -> format 
-    # can be used instead of specifying the files.
+    # Simple: binaryId -> format
 <%- binaries.forEach(([binaryId, info]) => { %>
     <%= binaryId %>: "<%= info.format %>"
 <%- }) %>

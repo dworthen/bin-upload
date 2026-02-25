@@ -1,5 +1,6 @@
-import { resolve } from 'node:path'
+import { relative, resolve } from 'node:path'
 import { checkbox, confirm, input } from '@inquirer/prompts'
+import { fileSelector } from 'inquirer-file-selector'
 import meow from 'meow'
 import validate from 'validate-npm-package-name'
 import { configTemplate } from '@/templates/configTemplate'
@@ -82,12 +83,15 @@ async function getBinariesConfig(): Promise<Record<string, any>> {
   )
 
   for (const [binaryId, info] of Object.entries(binariesConfig)) {
-    info.path = await input({
-      message: `What is the path to the binary for ${binaryId}?`,
-      default: `./bin/${binaryId}/`,
-      prefill: 'editable',
-      required: true,
-    })
+    info.path = relative(
+      process.cwd(),
+      (
+        await fileSelector({
+          message: `Select the binary for ${binaryId}?`,
+          type: 'file',
+        })
+      ).path,
+    ).replace(/\\/g, '/')
   }
 
   return binariesConfig

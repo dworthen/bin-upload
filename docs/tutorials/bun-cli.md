@@ -9,6 +9,10 @@ env-print PATH
 # => /usr/local/bin:/usr/bin:...
 ```
 
+## Resources
+
+[Source code](https://github.com/dworthen/bin-upload/tree/main/examples/bun-env-print).
+
 ## Prerequisites
 
 - [Bun](https://bun.sh) installed
@@ -134,12 +138,26 @@ bin/
 
 ## 4. Initialize bin-upload
 
+### Install
+
 ```sh
 bun add -D @d-dev/bin-upload
-bun run bin-upload init
 ```
 
-Walk through the interactive prompts, or create a `bin-upload.config.yaml` manually:
+### Add package.json Scripts
+
+```json
+{
+  ...
+  "scripts": {
+      "build": "bun run build.ts",
+      "pack": "bin-upload pack",
+      "publish": "bin-upload publish"
+    }
+}
+```
+
+Copy the following config to `bin-upload.config.yaml` or run `bun run bin-upload init` to walk through the interactive config creation:
 
 ```yaml
 binaries:
@@ -226,70 +244,68 @@ github:
 
 > **Note:** Replace the package names and repo info in `npm`, `pypi`, and `github` with your package and repo information.
 
+More on configuration [here](/configuration).
+
 ## 5. Pack
 
-Add a pack run script to `package.json`.
-
-```json
-{
-  ...
-  "scripts": {
-      "build": "bun run build.ts",
-      "pack": "bin-upload pack"
-    }
-}
-```
-
-and run
+Run
 
 ```sh
-bun run pack
+bun run pack -s npm.packageJson.version=1.0.0 -s pypi.metadata.Version=1.0.0
 ```
+
+> **Note:** `-s npm.packageJson.version=1.0.0` and `-s pypi.metadata.Version=1.0.0` are used to set the version for both package types since they are currently set to `<%= vars.gitTag %>` in the config file. `vars.gitTag` resolves to the latest git tag on the current branch that matches `v\d+\.\d+\.\d+` and git has not yet been initialized nor have any git tags been applied to the repo so we manually override the config values.
 
 This generates the `.bin-upload/` directory with npm tarballs, PyPI wheels, and GitHub archives:
 
 ```
 dist/
 ├── github/
-│   ├── env-print-linux-x64.tar.gz
-│   ├── env-print-linux-arm64.tar.gz
-│   ├── env-print-darwin-x64.tar.gz
-│   ├── env-print-darwin-arm64.tar.gz
-│   └── env-print-win-x64.zip
+│   ├── darwin-arm64.tar.gz
+│   ├── darwin-x64.tar.gz
+│   ├── linux-arm64-musl.tar.gz
+│   ├── linux-arm64.tar.gz
+│   ├── linux-x64-musl.tar.gz
+│   ├── linux-x64.tar.gz
+│   └── win-x64.zip
 ├── npm/
-│   ├── my-scope-env-print-1.0.0.tgz
-│   ├── my-scope-env-print-linux-x64-1.0.0.tgz
-│   ├── my-scope-env-print-linux-arm64-1.0.0.tgz
-│   ├── my-scope-env-print-darwin-x64-1.0.0.tgz
-│   ├── my-scope-env-print-darwin-arm64-1.0.0.tgz
-│   └── my-scope-env-print-win-x64-1.0.0.tgz
+│   ├── d-dev-bun-env-print-1.0.0.tgz
+│   ├── d-dev-bun-env-print-darwin-arm64-1.0.0.tgz
+│   ├── d-dev-bun-env-print-darwin-x64-1.0.0.tgz
+│   ├── d-dev-bun-env-print-linux-arm64-1.0.0.tgz
+│   ├── d-dev-bun-env-print-linux-x64-1.0.0.tgz
+│   └── d-dev-bun-env-print-win-x64-1.0.0.tgz
 └── pypi/
-    ├── env_print-1.0.0-py3-none-manylinux_2_17_x86_64.whl
-    ├── env_print-1.0.0-py3-none-manylinux_2_17_aarch64.whl
-    ├── env_print-1.0.0-py3-none-macosx_10_9_x86_64.whl
-    ├── env_print-1.0.0-py3-none-macosx_11_0_arm64.whl
-    └── env_print-1.0.0-py3-none-win_amd64.whl
+    ├── bun_env_print-1.0.0-py3-none-macosx_10_9_x86_64.whl
+    ├── bun_env_print-1.0.0-py3-none-macosx_11_0_arm64.whl
+    ├── bun_env_print-1.0.0-py3-none-manylinux_2_17_aarch64.whl
+    ├── bun_env_print-1.0.0-py3-none-manylinux_2_17_x86_64.whl
+    ├── bun_env_print-1.0.0-py3-none-musllinux_1_2_aarch64.whl
+    ├── bun_env_print-1.0.0-py3-none-musllinux_1_2_x86_64.whl
+    └── bun_env_print-1.0.0-py3-none-win_amd64.whl
 ```
+
+More on the pack command [here](/pack).
 
 ## 6. Test Locally
 
-### npm
+### NPM
 
 ```sh
 mkdir test-npm && cd test-npm
 npm init -y
-npm install ../dist/npm/my-scope-env-print-linux-x64-1.0.0.tgz
-npm install ../dist/npm/my-scope-env-print-1.0.0.tgz
-npx env-print PATH
+npm install ../bun-env-print/.bun-upload/npm/d-dev-bun-env-print-linux-x64-1.0.0.tgz
+npm install ../bun-env-print/.bun-upload/npm/d-dev-bun-env-print-1.0.0.tgz
+npx bun-env-print PATH
 ```
 
-### PyPI
+### Python with UV
 
 ```sh
 uv init test-pypi
 cd test-pypi
-uv add ../dist/pypi/env_print-1.0.0-py3-none-manylinux_2_17_x86_64.whl
-uv run env-print PATH
+uv add ../bun-env-print/.bun-upload/pypi/bun_env_print-1.0.0-py3-none-manylinux_2_17_x86_64.whl
+uv run bun-env-print PATH
 ```
 
 > **Note:** Use the platform-specific `.tgz` / `.whl` that matches your current machine.
@@ -303,11 +319,13 @@ git init
 git add .
 git commit -m "Initial commit"
 git tag -a v1.0.0 -m "Release v1.0.0"
-git remote add origin https://github.com/my-user/env-print.git
+git remote add origin https://github.com/my-user/bun-env-print.git
 git push -u origin main --follow-tags
-bin-upload pack
-bin-upload publish
+bun run pack
+bun run publish
 ```
+
+More on the publish command, including how to publish with GitHub actions, can be viewed [here](/publish).
 
 ## 8. Verify
 
@@ -315,8 +333,8 @@ Once published, install from npm or PyPI and confirm:
 
 ```sh
 # npm
-npx @my-scope/env-print PATH
+npx @d-dev/bun-env-print PATH
 
 # PyPI
-uvx env-print PATH
+uvx bun-env-print PATH
 ```

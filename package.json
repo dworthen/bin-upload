@@ -29,6 +29,7 @@
     "@octokit/rest": "^22.0.1",
     "archiver": "^7.0.1",
     "eta": "^4.5.1",
+    "inquirer-file-selector": "^1.0.1",
     "meow": "^14.0.0",
     "validate-npm-package-name": "^7.0.2",
     "yazl": "^3.3.1"

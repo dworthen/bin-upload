@@ -38,10 +38,8 @@ npm:
     # as defined by node's process.platform and process.arch
     # https://nodejs.org/docs/latest-v24.x/api/process.html#processplatform
     # https://nodejs.org/docs/latest-v24.x/api/process.html#processarch
-    # The os and arch values must match a valid combination of process.platform and process.arch.
-    # Therefore publishing musl linux binaries to npm is not possible since
-    # there is no way to differentiate them from glibc linux binaries using process.platform and process.arch.
-    # These packages will be dependencies of the main package.
+    # Note: It is not possible to publish musl linux binaries to
+    # NPM since you cannot identify binaries using musl with platform/arch.
     linux-x64:
       name: "@d-dev/bin-upload-linux-x64"
       os: "linux"
