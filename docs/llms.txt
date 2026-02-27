@@ -1,0 +1,370 @@
+# Bin Upload
+
+> Easily distribute binaries via npm, pypi, and GitHub releases.
+
+`bin-upload` is a CLI tool built with [Bun](https://bun.sh) that packages and publishes pre-built binaries to multiple registries and platforms.
+
+- **npm** — Publishes a main package that depends on platform-specific binary packages using optionalDependencies.
+- **PyPI** — Builds wheel (`.whl`) packages for each platform-specific tag.
+- **GitHub Releases** — Creates releases and uploads archive assets (`.tar.gz` or `.zip`).
+
+## Installation
+
+Install from npm:
+
+```sh
+npm install -g @d-dev/bin-upload
+```
+
+Install from PyPI:
+
+```sh
+pip install bin-upload
+# or
+uvx bin-upload <command>
+```
+
+Or download a binary from [GitHub Releases](https://github.com/dworthen/bin-upload/releases).
+
+## Requirements
+
+- [npm](https://www.npmjs.com/): required if publishing to npm
+- [uv](https://docs.astral.sh/uv/): required if publishing to pypi
+
+## Commands
+
+### `bin-upload init`
+
+Initialize a `bin-upload.config.yaml` configuration file via interactive prompts.
+
+Options:
+- `--help, -h` — Show help.
+- `--config, -c` — Path to output configuration file.
+- `--force, -f` — Overwrite existing configuration file.
+
+### `bin-upload pack`
+
+Build publishable artifacts (npm tarballs, PyPI wheels, GitHub archives) from your binaries.
+
+Options:
+- `--help, -h` — Show help.
+- `--config, -c` — Path to YAML configuration file. Default: `bin-upload.config.yaml`.
+- `--set, -s` — Set configuration values, e.g., `--set npm.packageJson.version=1.0.0`.
+- `--source` — Sources to pack: `all`, `npm`, `pypi`, `github`. Default: `all`.
+- `--verbose` — Enable verbose logging.
+
+### `bin-upload publish`
+
+Publish the packed artifacts to their respective registries.
+
+Options:
+- `--help, -h` — Show help.
+- `--config, -c` — Path to YAML configuration file. Default: `bin-upload.config.yaml`.
+- `--set, -s` — Set configuration values, e.g., `--set pypi.publish.token=some-token`.
+- `--source` — Sources to publish: `all`, `npm`, `pypi`, `github`. Default: `all`.
+- `--verbose` — Enable verbose logging.
+
+## Configuration
+
+The configuration file is a YAML file (default: `bin-upload.config.yaml`) that supports [Eta](https://eta.js.org/docs/4.x.x/intro/quickstart) templating with access to environment variables and built-in variables.
+
+### Template Variables
+
+- `env` — Access environment variables, e.g., `<%= env.NPM_TOKEN %>`.
+- `vars.gitTag` — The latest semver git tag (without the `v` prefix), extracted from tags matching `v\d+\.\d+\.\d+`.
+
+### Configuration Structure
+
+```yaml
+binaries:
+  # binaryId -> path to binary file
+  linux-x64: "./bin/linux-x64/my-binary"
+  darwin-arm64: "./bin/darwin-arm64/my-binary"
+  win-x64: "./bin/win-x64/my-binary.exe"
+
+pack:
+  prePackCommand: "bun run build"  # Optional command to run before packing
+  dir: "./.bin-upload"             # Output directory for packed artifacts
+
+npm:
+  readmeFile: "README.md"
+  licenseFile: "LICENSE"
+  packageJson:
+    name: "@scope/my-package"
+    version: <%= vars.gitTag %>
+    description: "My binary package"
+    license: "MIT"
+  binaryPackages:
+    linux-x64:
+      name: "@scope/my-package-linux-x64"
+      os: "linux"
+      arch: "x64"
+    darwin-arm64:
+      name: "@scope/my-package-darwin-arm64"
+      os: "darwin"
+      arch: "arm64"
+    win-x64:
+      name: "@scope/my-package-win-x64"
+      os: "win32"
+      arch: "x64"
+  publish:
+    access: "public"
+    tag: "latest"
+    "registry=https://registry.npmjs.org/": true
+    "//registry.npmjs.org/:_authToken=<%= env.NPM_TOKEN %>": true
+
+pypi:
+  readmeFile: "README.md"
+  platformTags:
+    linux-x64: "manylinux_2_17_x86_64"
+    darwin-arm64: "macosx_11_0_arm64"
+    win-x64: "win_amd64"
+  metadata:
+    Name: "my-package"
+    Version: <%= vars.gitTag %>
+    Summary: "My binary package"
+    Requires-Python: ">=3.11"
+  publish:
+    token: "<%= env.PYPI_TOKEN %>"
+
+github:
+  owner: "my-org"
+  repo: "my-repo"
+  token: "<%= env.GITHUB_TOKEN %>"
+  release:
+    tag_name: "v<%= vars.gitTag %>"
+  archives:
+    linux-x64: "tar.gz"
+    darwin-arm64: "tar.gz"
+    win-x64: "zip"
+```
+
+### Property Reference
+
+#### `binaries` (Required)
+
+Object mapping binary IDs to file paths. Keys are user-defined and referenced elsewhere in the config. Values are paths to the binary files.
+
+#### `pack` (Optional)
+
+- `pack.prePackCommand` — Shell command to run before packing (e.g., `"bun run build"`).
+- `pack.dir` — Output directory for packed artifacts. Default: `".bin-upload"`.
+
+#### `npm` (Optional)
+
+If provided, `packageJson.name`, `packageJson.version`, and `binaryPackages` are required.
+
+- `npm.packageJson.name` — Name of the main npm package.
+- `npm.packageJson.version` — Version of the npm package.
+- `npm.packageJson.*` — Any additional package.json fields (e.g., `description`, `license`, `author`, `repository`, `keywords`).
+- `npm.binaryPackages` — Object mapping binary IDs to platform-specific npm package info. Each entry requires `name`, `os`, and `arch`.
+- `npm.binaryPackages.<id>.name` — npm package name for this platform binary.
+- `npm.binaryPackages.<id>.os` — Value matching `process.platform` (e.g., `"linux"`, `"darwin"`, `"win32"`).
+- `npm.binaryPackages.<id>.arch` — Value matching `process.arch` (e.g., `"x64"`, `"arm64"`).
+- `npm.readmeFile` — Path to a README file to include in npm packages.
+- `npm.licenseFile` — Path to a LICENSE file to include in npm packages.
+- `npm.binNames` — Array of custom bin entry point names. Default: `"index.js"`.
+- `npm.publish` — Object of flags passed to `npm publish`. Common keys: `access`, `tag`, registry and auth token entries. Not needed when using trusted publishers.
+
+#### `pypi` (Optional)
+
+If provided, `metadata.Name`, `metadata.Version`, and `platformTags` are required.
+
+- `pypi.platformTags` — Object mapping binary IDs to wheel platform tags (e.g., `"manylinux_2_17_x86_64"`, `"macosx_11_0_arm64"`, `"win_amd64"`).
+- `pypi.metadata.Name` — PyPI package name.
+- `pypi.metadata.Version` — PyPI package version.
+- `pypi.metadata.*` — Any additional core metadata fields (e.g., `Summary`, `Author`, `License-Expression`, `Requires-Python`). `Metadata-Version` is automatically set to `2.5`.
+- `pypi.readmeFile` — Path to a README file to include in the wheel packages.
+- `pypi.licenseFile` — Path to a LICENSE file to include in the wheel packages.
+- `pypi.entryPointNames` — Array of custom `console_scripts` entry point names.
+- `pypi.publish` — Object of flags passed to `uv publish`. Common key: `token`. Not needed when using trusted publishers.
+
+#### `github` (Optional)
+
+If provided, `owner`, `repo`, `token`, `archives`, and `release` are required.
+
+- `github.owner` — GitHub repository owner (user or org).
+- `github.repo` — GitHub repository name.
+- `github.token` — GitHub API token. Must have repository-level Metadata read and Contents read & write permissions.
+- `github.release` — Object of options passed to the GitHub create release API.
+- `github.release.tag_name` — Git tag for the release (e.g., `"v<%= vars.gitTag %>")`).
+- `github.release.name` — Release title. Default: value of `tag_name`.
+- `github.release.body` — Release notes body. Default: commit message of the associated tag.
+- `github.archives` — Object mapping binary IDs to archive format (`"tar.gz"` or `"zip"`), or to an advanced archive descriptor with `format` and `files`.
+
+### Setting Config Values via CLI
+
+Use `--set` (`-s`) to override configuration values using dot notation:
+
+```sh
+bin-upload pack -s npm.packageJson.version=1.0.0 -s pypi.metadata.Version=1.0.0
+bin-upload publish -s "pypi.publish.token=some-token"
+```
+
+Escape dots and equals signs with backslashes when they are part of the key:
+
+```sh
+bin-upload publish -s "npm.publish.registry\=https://registry\.npmjs\.org/=true"
+```
+
+## How It Works
+
+### npm
+
+The `pack` command generates a main package that detects the user's platform (`process.platform` + `process.arch`) and delegates to the appropriate binary package. Platform-specific packages are listed as `optionalDependencies` in the main package, each containing the binary for that platform. When the main package is installed, only the matching platform-specific package is downloaded.
+
+Note: musl Linux binaries cannot be distinguished from glibc Linux binaries via `process.platform`/`process.arch`, so they cannot be published to npm.
+
+### PyPI
+
+The `pack` command builds platform-specific wheel (`.whl`) files. Each wheel contains a Python wrapper module that locates and executes the bundled binary, along with console script entry points for CLI usage. Only one PyPI package is created containing the platform-specific wheel files. Tools such as `pip` and `uv` automatically install the correct wheel for the machine.
+
+### GitHub Releases
+
+The `pack` command creates `.tar.gz` or `.zip` archives. The `publish` command creates a GitHub release (if one doesn't exist for the tag) and uploads the archives as release assets.
+
+### Publishing
+
+The npm CLI is used to publish to npm while uv is used to publish to PyPI.
+
+## Pack Output
+
+Running `bin-upload pack` creates a `.bin-upload/` directory (configurable via `pack.dir`) containing artifacts for each configured source:
+
+```
+.bin-upload/
+├── github/
+│   ├── darwin-arm64.tar.gz
+│   ├── linux-x64.tar.gz
+│   └── win-x64.zip
+├── npm/
+│   ├── scope-my-package-1.0.0.tgz
+│   ├── scope-my-package-darwin-arm64-1.0.0.tgz
+│   ├── scope-my-package-linux-x64-1.0.0.tgz
+│   └── scope-my-package-win-x64-1.0.0.tgz
+└── pypi/
+    ├── my_package-1.0.0-py3-none-manylinux_2_17_x86_64.whl
+    ├── my_package-1.0.0-py3-none-macosx_11_0_arm64.whl
+    └── my_package-1.0.0-py3-none-win_amd64.whl
+```
+
+## Testing Locally
+
+### Testing npm Packages
+
+```sh
+mkdir test-npm && cd test-npm
+npm init -y
+npm install path/to/.bin-upload/npm/scope-my-package-linux-x64-1.0.0.tgz
+npm install path/to/.bin-upload/npm/scope-my-package-1.0.0.tgz
+npx my-package
+```
+
+### Testing PyPI Wheel Packages
+
+```sh
+uv init test-pypi
+cd test-pypi
+uv add path/to/.bin-upload/pypi/my_package-1.0.0-py3-none-manylinux_2_17_x86_64.whl
+uv run my-package
+```
+
+## Quick Start
+
+1. Initialize a configuration file:
+
+```sh
+bin-upload init
+```
+
+2. Pack binaries into publishable artifacts:
+
+```sh
+git add .
+git commit -m "..."
+git tag -a v1.0.0 -m "Release v1.0.0"
+bin-upload pack
+```
+
+Or without git:
+
+```sh
+bin-upload pack -s npm.packageJson.version=1.0.0 -s pypi.metadata.Version=1.0.0
+```
+
+3. Publish:
+
+Create a `.env` file with tokens:
+
+```
+NPM_TOKEN="YOUR NPM TOKEN"
+GITHUB_TOKEN="YOUR GITHUB TOKEN"
+PYPI_TOKEN="YOUR PYPI TOKEN"
+```
+
+Then:
+
+```sh
+git push origin main --follow-tags
+bin-upload publish
+```
+
+## Publishing with GitHub Actions
+
+```yaml
+# .github/workflows/release.yml
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Build binaries
+        run: COMMAND TO BUILD YOUR BINARIES
+
+      - name: Pack
+        run: uvx bin-upload pack
+
+      - name: Publish
+        run: uvx bin-upload publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+With trusted publishers configured, you no longer need to set auth or tokens in the `npm.publish` and `pypi.publish` sections. You still need to reference the `GITHUB_TOKEN` in the `github` portion of the config.
+
+## Environment Variables
+
+- `NPM_TOKEN` — npm publish authentication (granular access token that bypasses 2FA).
+- `GITHUB_TOKEN` — GitHub API authentication (requires repository Metadata read and Contents read & write permissions).
+- `PYPI_TOKEN` — PyPI publish authentication.
+
+## Optional: links to full documentation
+
+- [Full Documentation](https://dworthen.github.io/bin-upload/)
+- [Quick Start](https://dworthen.github.io/bin-upload/quick-start.md)
+- [Configuration Reference](https://dworthen.github.io/bin-upload/configuration.md)
+- [Commands](https://dworthen.github.io/bin-upload/commands.md)
+- [Pack](https://dworthen.github.io/bin-upload/pack.md)
+- [Publishing](https://dworthen.github.io/bin-upload/publishing.md)
+- [How It Works](https://dworthen.github.io/bin-upload/how-it-works.md)
+- [Tutorial: Bun CLI](https://dworthen.github.io/bin-upload/tutorials/bun-cli.md)
