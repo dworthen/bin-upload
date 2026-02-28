@@ -16,6 +16,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "^2.3.14",
+        "@d-dev/changelog": "^1.0.2",
         "@types/archiver": "^7.0.0",
         "@types/bun": "latest",
         "@types/validate-npm-package-name": "^4.0.2",
@@ -46,6 +47,18 @@
     "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.3.14", "", { "os": "win32", "cpu": "arm64" }, "sha512-+IKYkj/pUBbnRf1G1+RlyA3LWiDgra1xpS7H2g4BuOzzRbRB+hmlw0yFsLprHhbbt7jUzbzAbAjK/Pn0FDnh1A=="],
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.3.14", "", { "os": "win32", "cpu": "x64" }, "sha512-oizCjdyQ3WJEswpb3Chdngeat56rIdSYK12JI3iI11Mt5T5EXcZ7WLuowzEaFPNJ3zmOQFliMN8QY1Pi+qsfdQ=="],
+
+    "@d-dev/changelog": ["@d-dev/changelog@1.0.2", "", { "optionalDependencies": { "@d-dev/changelog-darwin-arm64": "1.0.2", "@d-dev/changelog-darwin-x64": "1.0.2", "@d-dev/changelog-linux-arm64": "1.0.2", "@d-dev/changelog-linux-x64": "1.0.2", "@d-dev/changelog-win-x64": "1.0.2" }, "bin": { "changelog": "index.js" } }, "sha512-A2hkFFonkwDY7IP4xwe8LASS7zWXz+duE69K+ta8mWSvvFX/2/pxOaW39OZOa0HnbiFLA3K9NGkClfr90R9cSw=="],
+
+    "@d-dev/changelog-darwin-arm64": ["@d-dev/changelog-darwin-arm64@1.0.2", "", { "os": "darwin", "cpu": "arm64" }, "sha512-MYE1UlzZtnEDbDak8a2vclCZpTbz2Y1WE0IJskGFmgFKngP22e43AgrfUHvCW7lz4RIVGc8iKC0kQ6+stTPw2Q=="],
+
+    "@d-dev/changelog-darwin-x64": ["@d-dev/changelog-darwin-x64@1.0.2", "", { "os": "darwin", "cpu": "x64" }, "sha512-/eigZyf2f+LJ0iQTYE4tSzkwIye4D+iZ3LZdZWOXElE6nrHqRcvuc5sZqfr47wbvT4FnpaDVX58G9n+438Cexg=="],
+
+    "@d-dev/changelog-linux-arm64": ["@d-dev/changelog-linux-arm64@1.0.2", "", { "os": "linux", "cpu": "arm64" }, "sha512-DrD6BnXVhoioYgcqC0UCS7+CRdYfzSJjdmUeTQEP0gZa7b+hPX8R1LI2V6jK/mDtdJjw7yRUy11fuxWJqN6dkg=="],
+
+    "@d-dev/changelog-linux-x64": ["@d-dev/changelog-linux-x64@1.0.2", "", { "os": "linux", "cpu": "x64" }, "sha512-A8aHEXuH9rwB8YxSdvRT4NsdsF8/SQ94o+lYgbRcITVGzTbdpQCtkYqyAh1UPta8CJwDX3CXBlVgRam+egXaNQ=="],
+
+    "@d-dev/changelog-win-x64": ["@d-dev/changelog-win-x64@1.0.2", "", { "os": "win32", "cpu": "x64" }, "sha512-BfkmvJpm4z37Y2bUt3i/EoXNtq+Oo6kRse9z3nyqeMSWAcxIM+yyq3QhBplk2gCucv69nQ5G4aY9rVT6+71+CA=="],
 
     "@inquirer/ansi": ["@inquirer/ansi@2.0.3", "", {}, "sha512-g44zhR3NIKVs0zUesa4iMzExmZpLUdTLRMCStqX3GE5NT6VkPcxQGJ+uC8tDgBUC/vB1rUhUd55cOf++4NZcmw=="],
 

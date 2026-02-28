@@ -102,6 +102,13 @@ git tag -a v1.0.0 -m "Release v1.0.0"
 git push --follow-tags
 ```
 
+!> **NPM trusted publishing** requires that `npm.packageJson.repository` is set in your `bin-upload.config.yaml` configuration equal to the GitHub repo that has established trusted publishing, e.g., `github:USER/REPO`. [https://docs.npmjs.com/generating-provenance-statements#prerequisites](https://docs.npmjs.com/generating-provenance-statements#prerequisites)
+
+**More on Trusted Publishing**
+
+- NPM: [https://docs.npmjs.com/trusted-publishers](https://docs.npmjs.com/trusted-publishers)
+- PyPi: [https://docs.pypi.org/trusted-publishers/](https://docs.pypi.org/trusted-publishers/)
+
 ## Verify
 
 Once published, install from npm or PyPI and confirm:
