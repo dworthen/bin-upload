@@ -1,0 +1,10 @@
+timestamp: 1772285386155
+version: 0.1.2
+changeTypes: 
+  - Fix
+changes: 
+  - type: Fix
+    timestamp: 1772285357806
+    sha: 67e6e1d80b3e602118936a92f262881237ecdccf
+    shortSha: 67e6e1d
+    description: "Fix - Update docs.\""

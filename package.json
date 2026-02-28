@@ -1,6 +1,6 @@
 {
   "name": "@d-dev/bin-upload",
-  "version": "0.0.1",
+  "version": "0.1.2",
   "description": "Publish binaries to npm.",
   "module": "dist/index.js",
   "type": "module",
