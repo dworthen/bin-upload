@@ -15,12 +15,14 @@ npm install -D @d-dev/bin-upload
 npx @d-dev/bin-upload <command>
 ```
 
-### **Python**
+### **PyPi**
 
 ```sh
 pip install bin-upload
 # or with UV
 uv tool install bin-upload
+# or as a package dependency
+uv add --dev bin-upload
 # or run with uvx
 uvx bin-upload <command>
 ```
@@ -38,7 +40,7 @@ The following must be installed and available on your path.
 - [npm](https://www.npmjs.com/): if publishing to npm
 - [uv](https://docs.astral.sh/uv/): if publishing to pypi
 
-## 1. Initialize a configuration file
+## 1. Init
 
 ```sh
 bin-upload init
@@ -48,7 +50,7 @@ This will walk you through an interactive prompt and generate a `bin-upload.conf
 
 More on configuration [here](/configuration).
 
-## 2. Pack binaries into publishable artifacts
+## 2. Pack
 
 ### Git flow
 

@@ -25,6 +25,7 @@ npm:
     author: "Derek Worthen <worthend.derek@gmail.com>"
     license: "MIT"
     repository: "github:dworthen/bin-upload"
+    homepage: "https://dworthen.github.io/bin-upload"
     keywords:
       - "bin-upload"
       - "binary"
@@ -104,6 +105,7 @@ pypi:
     License-Expression: "MIT"
     Requires-Python: ">=3.11"
     Project-URL: source, https://github.com/dworthen/bin-upload
+    Project-URL: homepage, https://dworthen.github.io/bin-upload
     keywords: "bin-upload,binary,pypi,npm,github,publish"
   # publish:
   #   # Arguments to pass to `uv publish`

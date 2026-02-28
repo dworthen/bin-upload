@@ -29,9 +29,11 @@ async function publishToNpm(config: Config): Promise<number> {
     matches.push(matchingPath)
   }
 
-  const results = await Promise.all(
-    matches.map(async (assetPath) => await uploadToNpm(config, assetPath)),
-  )
+  const results: number[] = []
+  for (const assetPath of matches) {
+    const code = await uploadToNpm(config, assetPath)
+    results.push(code)
+  }
 
   if (results.some((code) => code !== 0)) {
     console.error(`Error publishing one or more npm packages.`)
@@ -100,12 +102,11 @@ async function publishGithub(config: Config): Promise<number> {
     matches.push(matchingPath)
   }
 
-  const results = await Promise.all(
-    matches.map(
-      async (assetPath) =>
-        await uploadReleaseAsset(config, releaseInfo, assetPath),
-    ),
-  )
+  const results: number[] = []
+  for (const assetPath of matches) {
+    const code = await uploadReleaseAsset(config, releaseInfo, assetPath)
+    results.push(code)
+  }
 
   if (results.some((code) => code !== 0)) {
     console.error(`Error publishing one or more GitHub release assets.`)
@@ -180,17 +181,18 @@ export async function publish(argv: string[]) {
     console.log('Loaded configuration:')
     console.log(Bun.YAML.stringify(config, null, 2))
   }
-  const cmds: Array<Promise<number>> = []
+
+  const results: number[] = []
+
   if (cli.flags.source === 'all' || cli.flags.source === 'npm') {
-    cmds.push(publishToNpm(config))
+    results.push(await publishToNpm(config))
   }
   if (cli.flags.source === 'all' || cli.flags.source === 'pypi') {
-    cmds.push(publishPypi(config))
+    results.push(await publishPypi(config))
   }
   if (cli.flags.source === 'all' || cli.flags.source === 'github') {
-    cmds.push(publishGithub(config))
+    results.push(await publishGithub(config))
   }
-  const results = await Promise.all(cmds)
 
   process.exit(results.some((code) => code !== 0) ? 1 : 0)
 }
