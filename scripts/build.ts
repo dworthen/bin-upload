@@ -7,6 +7,7 @@ const builds: Record<string, string> = {
   'bun-linux-x64-modern': 'bin/linux-x64/bin-upload',
   'bun-linux-x64-musl-modern': 'bin/linux-x64-musl/bin-upload',
   'bun-windows-x64-modern': 'bin/win-x64/bin-upload',
+  'bun-windows-arm64': 'bin/win-arm64/bin-upload',
   'bun-darwin-arm64': 'bin/darwin-arm64/bin-upload',
   'bun-darwin-x64': 'bin/darwin-x64/bin-upload',
 }

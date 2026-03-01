@@ -5,7 +5,7 @@ binaries:
   linux-arm64: "./bin/linux-arm64/bin-upload"
   linux-arm64-musl: "./bin/linux-arm64-musl/bin-upload"
   win-x64: "./bin/win-x64/bin-upload.exe"
-  # win-arm64: "./bin/win-arm64/bin-upload.exe"
+  win-arm64: "./bin/win-arm64/bin-upload.exe"
   darwin-x64: "./bin/darwin-x64/bin-upload"
   darwin-arm64: "./bin/darwin-arm64/bin-upload"
 pack:
@@ -53,10 +53,10 @@ npm:
       name: "@d-dev/bin-upload-win-x64"
       os: "win32"
       arch: "x64"
-    # win-arm64:
-    #   name: "@d-dev/bin-upload-win-arm64"
-    #   os: "win32"
-    #   arch: "arm64"
+    win-arm64:
+      name: "@d-dev/bin-upload-win-arm64"
+      os: "win32"
+      arch: "arm64"
     darwin-x64:
       name: "@d-dev/bin-upload-darwin-x64"
       os: "darwin"
@@ -91,7 +91,7 @@ pypi:
     linux-arm64: "manylinux_2_17_aarch64"
     linux-arm64-musl: "musllinux_1_2_aarch64"
     win-x64: "win_amd64"
-    # win-arm64: "win_arm64"
+    win-arm64: "win_arm64"
     darwin-x64: "macosx_10_9_x86_64"
     darwin-arm64: "macosx_11_0_arm64"
   metadata:
@@ -137,7 +137,7 @@ github:
     linux-arm64: "tar.gz"
     linux-arm64-musl: "tar.gz"
     win-x64: "zip"
-    # win-arm64: "zip"
+    win-arm64: "zip"
     darwin-x64: "tar.gz"
     darwin-arm64: "tar.gz"
     # Example of more control of creating archives
