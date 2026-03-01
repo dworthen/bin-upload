@@ -6,7 +6,7 @@ import { uploadToNpm } from '@/lib/npm'
 import { objToCliArgs } from '@/lib/objects'
 import { getPackOutputDir } from '@/lib/paths'
 
-async function publishToNpm(config: Config): Promise<number> {
+async function publishToNpm(config: Config, filter?: string): Promise<number> {
   if (!config.npm) {
     console.warn(
       'npm configuration is missing in the config file. Skipping publishing npm packages.',
@@ -17,7 +17,7 @@ async function publishToNpm(config: Config): Promise<number> {
   const dir = await getPackOutputDir(config, 'npm')
 
   console.log(`Publishing npm packages...`)
-  const glob = new Glob(`*.tgz`)
+  const glob = new Glob(filter ?? `*.tgz`)
   const matches: string[] = []
 
   for (const matchingPath of glob.scanSync({
@@ -44,7 +44,7 @@ async function publishToNpm(config: Config): Promise<number> {
   return results.some((code) => code !== 0) ? 1 : 0
 }
 
-async function publishPypi(config: Config): Promise<number> {
+async function publishPypi(config: Config, filter?: string): Promise<number> {
   if (!config.pypi) {
     console.warn(
       'PyPI configuration is missing in the config file. Skipping publishing PyPI packages.',
@@ -52,7 +52,7 @@ async function publishPypi(config: Config): Promise<number> {
     return 0
   }
 
-  const dir = `${(await getPackOutputDir(config, 'pypi')).replace(/\\/g, '/')}/*.whl`
+  const dir = `${(await getPackOutputDir(config, 'pypi')).replace(/\\/g, '/')}/${filter ?? '*.whl'}`
 
   console.log(`Publishing PyPI packages ${dir}...`)
   const publishArgs = objToCliArgs(config.pypi.publish || {})
@@ -73,7 +73,7 @@ async function publishPypi(config: Config): Promise<number> {
   return await proc.exited
 }
 
-async function publishGithub(config: Config): Promise<number> {
+async function publishGithub(config: Config, filter?: string): Promise<number> {
   if (!config.github) {
     console.warn(
       'GitHub configuration is missing in the config file. Skipping publishing GitHub releases.',
@@ -90,7 +90,7 @@ async function publishGithub(config: Config): Promise<number> {
   const releaseInfo = await getReleaseInfo(config)
   const ghDir = await getPackOutputDir(config, 'github')
 
-  const glob = new Glob(`*`)
+  const glob = new Glob(filter ?? `*`)
   const matches: string[] = []
 
   for (const matchingPath of glob.scanSync({
@@ -128,6 +128,7 @@ export async function publish(argv: string[]) {
       --config, -c    (Optional) Path to yaml configuration file [default=bin-upload.config.yaml].
       --set, -s       (Optional) Set configuration values via command line, e.g. --set npm.packageJson.version=1.0.0.
       --source        (Optional) Sources to pack (all, npm, pypi, github) [default=all].
+      --filter        (Optional) Filter pattern of what to publish. 
       --verbose       (Optional) Enable verbose logging.
 
     Examples
@@ -162,6 +163,9 @@ export async function publish(argv: string[]) {
           isMultiple: true,
           default: [],
         },
+        filter: {
+          type: 'string',
+        },
         verbose: {
           type: 'boolean',
           default: false,
@@ -185,13 +189,13 @@ export async function publish(argv: string[]) {
   const results: number[] = []
 
   if (cli.flags.source === 'all' || cli.flags.source === 'npm') {
-    results.push(await publishToNpm(config))
+    results.push(await publishToNpm(config, cli.flags.filter))
   }
   if (cli.flags.source === 'all' || cli.flags.source === 'pypi') {
-    results.push(await publishPypi(config))
+    results.push(await publishPypi(config, cli.flags.filter))
   }
   if (cli.flags.source === 'all' || cli.flags.source === 'github') {
-    results.push(await publishGithub(config))
+    results.push(await publishGithub(config, cli.flags.filter))
   }
 
   process.exit(results.some((code) => code !== 0) ? 1 : 0)
