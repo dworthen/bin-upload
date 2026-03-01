@@ -5,6 +5,7 @@
     "": {
       "name": "bin-to-npm",
       "dependencies": {
+        "@d-dev/roar": "^0.0.3",
         "@inquirer/prompts": "^8.2.1",
         "@octokit/rest": "^22.0.1",
         "archiver": "^7.0.1",
@@ -16,7 +17,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "^2.3.14",
-        "@d-dev/changelog": "^1.0.2",
+        "@d-dev/changelog": "^1.1.1",
         "@types/archiver": "^7.0.0",
         "@types/bun": "latest",
         "@types/validate-npm-package-name": "^4.0.2",
@@ -48,17 +49,21 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.3.14", "", { "os": "win32", "cpu": "x64" }, "sha512-oizCjdyQ3WJEswpb3Chdngeat56rIdSYK12JI3iI11Mt5T5EXcZ7WLuowzEaFPNJ3zmOQFliMN8QY1Pi+qsfdQ=="],
 
-    "@d-dev/changelog": ["@d-dev/changelog@1.0.2", "", { "optionalDependencies": { "@d-dev/changelog-darwin-arm64": "1.0.2", "@d-dev/changelog-darwin-x64": "1.0.2", "@d-dev/changelog-linux-arm64": "1.0.2", "@d-dev/changelog-linux-x64": "1.0.2", "@d-dev/changelog-win-x64": "1.0.2" }, "bin": { "changelog": "index.js" } }, "sha512-A2hkFFonkwDY7IP4xwe8LASS7zWXz+duE69K+ta8mWSvvFX/2/pxOaW39OZOa0HnbiFLA3K9NGkClfr90R9cSw=="],
+    "@d-dev/changelog": ["@d-dev/changelog@1.1.1", "", { "optionalDependencies": { "@d-dev/changelog-darwin-arm64": "1.1.1", "@d-dev/changelog-darwin-x64": "1.1.1", "@d-dev/changelog-linux-arm64": "1.1.1", "@d-dev/changelog-linux-x64": "1.1.1", "@d-dev/changelog-win-arm64": "1.1.1", "@d-dev/changelog-win-x64": "1.1.1" }, "bin": { "changelog": "index.js" } }, "sha512-fOTAP3j5IHNPYMJgYgstKAE6LzGN+9WPBAgS+dxk3a+LnDMx992HV0Cjy9vSaQcdcItsY2PxraGZ/XTWEvWe7g=="],
 
-    "@d-dev/changelog-darwin-arm64": ["@d-dev/changelog-darwin-arm64@1.0.2", "", { "os": "darwin", "cpu": "arm64" }, "sha512-MYE1UlzZtnEDbDak8a2vclCZpTbz2Y1WE0IJskGFmgFKngP22e43AgrfUHvCW7lz4RIVGc8iKC0kQ6+stTPw2Q=="],
+    "@d-dev/changelog-darwin-arm64": ["@d-dev/changelog-darwin-arm64@1.1.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-17WIDe5hqWEqz635fKY9TuetE3jwXlYq5jjUywFte2IGxUhi+uObXMU7torb00YxJmy8UmriLkrYjZcBtWPnKw=="],
 
-    "@d-dev/changelog-darwin-x64": ["@d-dev/changelog-darwin-x64@1.0.2", "", { "os": "darwin", "cpu": "x64" }, "sha512-/eigZyf2f+LJ0iQTYE4tSzkwIye4D+iZ3LZdZWOXElE6nrHqRcvuc5sZqfr47wbvT4FnpaDVX58G9n+438Cexg=="],
+    "@d-dev/changelog-darwin-x64": ["@d-dev/changelog-darwin-x64@1.1.1", "", { "os": "darwin", "cpu": "x64" }, "sha512-kAiNoQoi1VJWazagwdzLOT8lxIAyXGul1fJTkfEas3RAB7EumdhWktn4KEONF4I+ySJGRC8t16ofAidg6a9ERw=="],
 
-    "@d-dev/changelog-linux-arm64": ["@d-dev/changelog-linux-arm64@1.0.2", "", { "os": "linux", "cpu": "arm64" }, "sha512-DrD6BnXVhoioYgcqC0UCS7+CRdYfzSJjdmUeTQEP0gZa7b+hPX8R1LI2V6jK/mDtdJjw7yRUy11fuxWJqN6dkg=="],
+    "@d-dev/changelog-linux-arm64": ["@d-dev/changelog-linux-arm64@1.1.1", "", { "os": "linux", "cpu": "arm64" }, "sha512-nQ5sj0SgOSpcUboj9/7vifknWaQY0zK/D9Ps2BVreJQbUXfSY1TO1K4Ftp3In5lcee8xMH87BGywxMp/jy/hXw=="],
 
-    "@d-dev/changelog-linux-x64": ["@d-dev/changelog-linux-x64@1.0.2", "", { "os": "linux", "cpu": "x64" }, "sha512-A8aHEXuH9rwB8YxSdvRT4NsdsF8/SQ94o+lYgbRcITVGzTbdpQCtkYqyAh1UPta8CJwDX3CXBlVgRam+egXaNQ=="],
+    "@d-dev/changelog-linux-x64": ["@d-dev/changelog-linux-x64@1.1.1", "", { "os": "linux", "cpu": "x64" }, "sha512-YjpTa5QpX7hOJU+nOYqVZLGr9UQvFMn0nvh4HEcZZDgRQ4noeOOk4oUr46g13swRkDs+6vJYnCb91TYektM0iQ=="],
 
-    "@d-dev/changelog-win-x64": ["@d-dev/changelog-win-x64@1.0.2", "", { "os": "win32", "cpu": "x64" }, "sha512-BfkmvJpm4z37Y2bUt3i/EoXNtq+Oo6kRse9z3nyqeMSWAcxIM+yyq3QhBplk2gCucv69nQ5G4aY9rVT6+71+CA=="],
+    "@d-dev/changelog-win-arm64": ["@d-dev/changelog-win-arm64@1.1.1", "", { "os": "win32", "cpu": "arm64" }, "sha512-SJjxD6NRkWw47/eA5wwTKqGaBbd34jt40E1LM/q6DxGF+YSP9Ee7uomZO15ErKnJjes2Y/UgBb2aqZk+9Aqq8g=="],
+
+    "@d-dev/changelog-win-x64": ["@d-dev/changelog-win-x64@1.1.1", "", { "os": "win32", "cpu": "x64" }, "sha512-8I+93pP+AHcg+ayF85eNdkcQpHQTEBlLcCcrpDoQXCYcbDus+8axPayGaQms+qBa0L1uTLJYgNJue5C/3dQgCw=="],
+
+    "@d-dev/roar": ["@d-dev/roar@0.0.3", "", { "dependencies": { "meow": "^14.1.0" } }, "sha512-mJNIsS0k7TzFtK/JKgQjMsTPhphYz5v/qXPn7cYZuhery/pQfHHCyVXaIA1OmWvkG9TMOvTgyYyimm2JQQ09NA=="],
 
     "@inquirer/ansi": ["@inquirer/ansi@2.0.3", "", {}, "sha512-g44zhR3NIKVs0zUesa4iMzExmZpLUdTLRMCStqX3GE5NT6VkPcxQGJ+uC8tDgBUC/vB1rUhUd55cOf++4NZcmw=="],
 
@@ -641,6 +646,8 @@
     "yoctocolors-cjs": ["yoctocolors-cjs@2.1.3", "", {}, "sha512-U/PBtDf35ff0D8X8D0jfdzHYEPFxAI7jJlxZXwCSez5M3190m+QobIfh+sWDWSHMCWWJN2AWamkegn6vr6YBTw=="],
 
     "zip-stream": ["zip-stream@6.0.1", "", { "dependencies": { "archiver-utils": "^5.0.0", "compress-commons": "^6.0.2", "readable-stream": "^4.0.0" } }, "sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA=="],
+
+    "@d-dev/roar/meow": ["meow@14.1.0", "", {}, "sha512-EDYo6VlmtnumlcBCbh1gLJ//9jvM/ndXHfVXIFrZVr6fGcwTUyCTFNTLCKuY3ffbK8L/+3Mzqnd58RojiZqHVw=="],
 
     "@inquirer/checkbox/@inquirer/core": ["@inquirer/core@11.1.4", "", { "dependencies": { "@inquirer/ansi": "^2.0.3", "@inquirer/figures": "^2.0.3", "@inquirer/type": "^4.0.3", "cli-width": "^4.1.0", "fast-wrap-ansi": "^0.2.0", "mute-stream": "^3.0.0", "signal-exit": "^4.1.0" }, "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-1HvwyASF0tE/7W8geTTn0ydiWb463pq4SBIpaWcVabTrw55+CiRmytV9eZoqt3ohchsPw4Vv60jfNiI6YljVUg=="],
 
