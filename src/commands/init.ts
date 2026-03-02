@@ -1,7 +1,7 @@
 import { relative, resolve } from 'node:path'
+import { createCommand } from '@d-dev/roar'
 import { checkbox, confirm, input } from '@inquirer/prompts'
 import { fileSelector } from 'inquirer-file-selector'
-import meow from 'meow'
 import validate from 'validate-npm-package-name'
 import { configTemplate } from '@/templates/configTemplate'
 import { renderString } from '@/templates/renderString'
@@ -223,121 +223,96 @@ async function getGithubConfig(): Promise<Record<string, any>> {
   return ghConfig
 }
 
-export async function init(argv: string[]) {
-  const cli = meow(
-    `
-    Usage
-      $ bin-upload init [options]  
-
-    Options
-      --help, -h      Show help.
-      --config, -c    Path to yaml configuration file to output.
-      --force, -f     Overwrite existing configuration file if it exists.
-
-    Examples
-      $ bin-upload init
-      $ bin-upload init --config ./bin-upload.config.yaml
-  `,
-    {
-      argv: argv,
-      importMeta: import.meta,
-      description: 'Initialize a bin-upload configuration file.',
-      autoHelp: false,
-      autoVersion: false,
-      flags: {
-        help: {
-          type: 'boolean',
-          shortFlag: 'h',
-        },
-        config: {
-          type: 'string',
-          shortFlag: 'c',
-          isRequired: false,
-        },
-        force: {
-          type: 'boolean',
-          shortFlag: 'f',
-          default: false,
-        },
+export const initCommand = createCommand(
+  {
+    usageName: 'bin-upload init',
+    description: 'Initialize a bin-upload configuration file.',
+    flags: {
+      config: {
+        type: 'string',
+        shortFlag: 'c',
+        description: 'Path to yaml configuration file to output.',
+      },
+      force: {
+        type: 'boolean',
+        shortFlag: 'f',
+        description: 'Overwrite existing configuration file if it exists.',
+        default: false,
       },
     },
-  )
+  },
+  async (result) => {
+    const results: Record<string, any> = {
+      npm: null,
+      pypi: null,
+      github: null,
+    }
 
-  if (cli.flags.help) {
-    cli.showHelp()
-    process.exit(1)
-  }
+    const configPath =
+      result.flags.config ||
+      (await input({
+        message: 'Where do you want to output the configuration file?',
+        default: './bin-upload.config.yaml',
+        prefill: 'editable',
+        required: true,
+      }))
 
-  const results: Record<string, any> = {
-    npm: null,
-    pypi: null,
-    github: null,
-  }
+    const configFile = Bun.file(resolve(configPath))
 
-  const configPath =
-    cli.flags.config ||
-    (await input({
-      message: 'Where do you want to output the configuration file?',
-      default: './bin-upload.config.yaml',
-      prefill: 'editable',
-      required: true,
-    }))
+    if (!result.flags.force && (await configFile.exists())) {
+      const overwrite = await confirm({
+        message: `Configuration file already exists at ${configPath}. Do you want to overwrite it?`,
+        default: false,
+      })
+      if (!overwrite) {
+        console.warn('Aborting initialization.')
+        process.exit(1)
+      }
+    }
 
-  const configFile = Bun.file(resolve(configPath))
+    const binariesConfig = await getBinariesConfig()
 
-  if (!cli.flags.force && (await configFile.exists())) {
-    const overwrite = await confirm({
-      message: `Configuration file already exists at ${configPath}. Do you want to overwrite it?`,
-      default: false,
+    results.binaries = Object.entries(binariesConfig)
+
+    // @ts-expect-error
+    results.npmBinaries = results.binaries.filter(([_, info]) => info.npm)
+
+    const publishNpm = await confirm({
+      message: 'Do you want to publish to npm?',
+      default: true,
     })
-    if (!overwrite) {
-      console.warn('Aborting initialization.')
+
+    if (publishNpm) {
+      results.npm = await getNpmConfig()
+    }
+
+    const publishPypi = await confirm({
+      message: 'Do you want to publish to PyPI?',
+      default: true,
+    })
+
+    if (publishPypi) {
+      results.pypi = await getPypiConfig()
+    }
+
+    const publishGithub = await confirm({
+      message: 'Do you want to publish to GitHub releases?',
+      default: true,
+    })
+
+    if (publishGithub) {
+      results.gh = await getGithubConfig()
+    }
+
+    if (!publishNpm && !publishPypi && !publishGithub) {
+      console.warn('No publication targets selected. Aborting initialization.')
       process.exit(1)
     }
-  }
 
-  const binariesConfig = await getBinariesConfig()
+    const contents = renderString(configTemplate, results)
 
-  results.binaries = Object.entries(binariesConfig)
+    await Bun.write(configFile, contents)
 
-  // @ts-expect-error
-  results.npmBinaries = results.binaries.filter(([_, info]) => info.npm)
-
-  const publishNpm = await confirm({
-    message: 'Do you want to publish to npm?',
-    default: true,
-  })
-
-  if (publishNpm) {
-    results.npm = await getNpmConfig()
-  }
-
-  const publishPypi = await confirm({
-    message: 'Do you want to publish to PyPI?',
-    default: true,
-  })
-
-  if (publishPypi) {
-    results.pypi = await getPypiConfig()
-  }
-
-  const publishGithub = await confirm({
-    message: 'Do you want to publish to GitHub releases?',
-    default: true,
-  })
-
-  if (publishGithub) {
-    results.gh = await getGithubConfig()
-  }
-
-  if (!publishNpm && !publishPypi && !publishGithub) {
-    console.warn('No publication targets selected. Aborting initialization.')
-    process.exit(1)
-  }
-
-  const contents = renderString(configTemplate, results)
-
-  await Bun.write(configFile, contents)
-
-  console.log(`Configuration file written to ${configPath}`)
-}
+    console.log(`Configuration file written to ${configPath}`)
+  },
+)

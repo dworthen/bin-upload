@@ -1,7 +1,7 @@
 {
   "name": "@d-dev/bin-upload",
   "version": "0.2.0",
-  "description": "Publish binaries to npm.",
+  "description": "Publish binaries to NPM, PyPi, and GitHub releases.",
   "module": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -35,7 +35,6 @@
     "archiver": "^7.0.1",
     "eta": "^4.5.1",
     "inquirer-file-selector": "^1.0.1",
-    "meow": "^14.0.0",
     "validate-npm-package-name": "^7.0.2",
     "yazl": "^3.3.1"
   }

@@ -1,5 +1,5 @@
+import { createCommand } from '@d-dev/roar'
 import { Glob } from 'bun'
-import meow from 'meow'
 import { type Config, loadConfig } from '@/lib/config'
 import { getReleaseInfo, uploadReleaseAsset } from '@/lib/github'
 import { uploadToNpm } from '@/lib/npm'
@@ -117,86 +117,62 @@ async function publishGithub(config: Config, filter?: string): Promise<number> {
   return results.some((code) => code !== 0) ? 1 : 0
 }
 
-export async function publish(argv: string[]) {
-  const cli = meow(
-    `
-    Usage
-      $ bin-upload publish [options]  
-
-    Options
-      --help, -h      Show help.
-      --config, -c    (Optional) Path to yaml configuration file [default=bin-upload.config.yaml].
-      --set, -s       (Optional) Set configuration values via command line, e.g. --set npm.packageJson.version=1.0.0.
-      --source        (Optional) Sources to pack (all, npm, pypi, github) [default=all].
-      --filter        (Optional) Filter pattern of what to publish. 
-      --verbose       (Optional) Enable verbose logging.
-
-    Examples
-      $ bin-upload publish
-      $ bin-upload publish --config ./bin-upload.config.yaml
-      $ bin-upload publish -s npm.packageJson.version=1.0.0 -s pypi.metadata.Version=1.0.0
-  `,
-    {
-      argv: argv,
-      importMeta: import.meta,
-      description: 'Publish binaries to npm, pypi, or github.',
-      autoHelp: false,
-      autoVersion: false,
-      flags: {
-        help: {
-          type: 'boolean',
-          shortFlag: 'h',
-        },
-        config: {
-          type: 'string',
-          shortFlag: 'c',
-          default: 'bin-upload.config.yaml',
-        },
-        source: {
-          type: 'string',
-          default: 'all',
-          choices: ['all', 'npm', 'pypi', 'github'],
-        },
-        set: {
-          type: 'string',
-          shortFlag: 's',
-          isMultiple: true,
-          default: [],
-        },
-        filter: {
-          type: 'string',
-        },
-        verbose: {
-          type: 'boolean',
-          default: false,
-        },
+export const publishCommand = createCommand(
+  {
+    usageName: 'bin-upload publish',
+    description: 'Publish binaries to npm, pypi, or github.',
+    flags: {
+      config: {
+        type: 'string',
+        shortFlag: 'c',
+        description: 'Path to yaml configuration file.',
+        default: 'bin-upload.config.yaml',
+      },
+      source: {
+        type: 'string',
+        choices: ['all', 'npm', 'pypi', 'github'],
+        description: 'Sources to publish (all, npm, pypi, github).',
+        default: 'all',
+      },
+      set: {
+        type: 'string',
+        shortFlag: 's',
+        description:
+          'Set configuration values via command line, e.g. --set npm.packageJson.version=1.0.0.',
+        isMultiple: true,
+        default: [],
+      },
+      filter: {
+        type: 'string',
+        description: 'Filter pattern of what to publish.',
+      },
+      verbose: {
+        type: 'boolean',
+        description: 'Enable verbose logging.',
+        default: false,
       },
     },
-  )
+  },
+  async (result) => {
+    const config = await loadConfig(result.flags.config, result.flags.set)
 
-  if (cli.flags.help) {
-    cli.showHelp()
-    process.exit(1)
-  }
+    if (result.flags.verbose) {
+      console.log('Loaded configuration:')
+      console.log(Bun.YAML.stringify(config, null, 2))
+    }
 
-  const config = await loadConfig(cli.flags.config, cli.flags.set)
+    const results: number[] = []
 
-  if (cli.flags.verbose) {
-    console.log('Loaded configuration:')
-    console.log(Bun.YAML.stringify(config, null, 2))
-  }
+    if (result.flags.source === 'all' || result.flags.source === 'npm') {
+      results.push(await publishToNpm(config, result.flags.filter))
+    }
+    if (result.flags.source === 'all' || result.flags.source === 'pypi') {
+      results.push(await publishPypi(config, result.flags.filter))
+    }
+    if (result.flags.source === 'all' || result.flags.source === 'github') {
+      results.push(await publishGithub(config, result.flags.filter))
+    }
 
-  const results: number[] = []
-
-  if (cli.flags.source === 'all' || cli.flags.source === 'npm') {
-    results.push(await publishToNpm(config, cli.flags.filter))
-  }
-  if (cli.flags.source === 'all' || cli.flags.source === 'pypi') {
-    results.push(await publishPypi(config, cli.flags.filter))
-  }
-  if (cli.flags.source === 'all' || cli.flags.source === 'github') {
-    results.push(await publishGithub(config, cli.flags.filter))
-  }
-
-  process.exit(results.some((code) => code !== 0) ? 1 : 0)
-}
+    process.exit(results.some((code) => code !== 0) ? 1 : 0)
+  },
+)

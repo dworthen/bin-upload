@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { readdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import meow from 'meow'
+import { createCommand } from '@d-dev/roar'
 import { type Config, loadConfig } from '@/lib/config'
 import { getPackOutputDir } from '@/lib/paths'
 import { buildGithubArchive } from '@/workers/buildGithubArchives'
@@ -124,87 +124,63 @@ async function buildGithubArchives(config: Config): Promise<number> {
   return processOutputs.some((code) => code !== 0) ? 1 : 0
 }
 
-export async function pack(argv: string[]) {
-  const cli = meow(
-    `
-    Usage
-      $ bin-upload pack [options]  
-
-    Options
-      --help, -h      Show help.
-      --config, -c    (Optional) Path to yaml configuration file [default=bin-upload.config.yaml].
-      --set, -s       (Optional) Set configuration values via command line, e.g. --set npm.packageJson.version=1.0.0.
-      --source        (Optional) Sources to pack (all, npm, pypi, github) [default=all].
-      --verbose       (Optional) Enable verbose logging.
-
-    Examples
-      $ bin-upload pack
-      $ bin-upload pack --config ./bin-upload.config.yaml
-      $ bin-upload pack -s npm.packageJson.version=1.0.0 -s pypi.metadata.Version=1.0.0
-  `,
-    {
-      argv: argv,
-      importMeta: import.meta,
-      description: 'Pack binaries into publishable artifacts.',
-      autoHelp: false,
-      autoVersion: false,
-      flags: {
-        help: {
-          type: 'boolean',
-          shortFlag: 'h',
-        },
-        config: {
-          type: 'string',
-          shortFlag: 'c',
-          default: 'bin-upload.config.yaml',
-        },
-        source: {
-          type: 'string',
-          default: 'all',
-          choices: ['all', 'npm', 'pypi', 'github'],
-        },
-        set: {
-          type: 'string',
-          shortFlag: 's',
-          isMultiple: true,
-          default: [],
-        },
-        verbose: {
-          type: 'boolean',
-          default: false,
-        },
+export const packCommand = createCommand(
+  {
+    usageName: 'bin-upload pack',
+    description: 'Pack binaries into publishable artifacts.',
+    flags: {
+      config: {
+        type: 'string',
+        shortFlag: 'c',
+        description: 'Path to yaml configuration file.',
+        default: 'bin-upload.config.yaml',
+      },
+      source: {
+        type: 'string',
+        choices: ['all', 'npm', 'pypi', 'github'],
+        description: 'Sources to pack (all, npm, pypi, github).',
+        default: 'all',
+      },
+      set: {
+        type: 'string',
+        shortFlag: 's',
+        description:
+          'Set configuration values via command line, e.g. --set npm.packageJson.version=1.0.0.',
+        isMultiple: true,
+        default: [],
+      },
+      verbose: {
+        type: 'boolean',
+        description: 'Enable verbose logging.',
+        default: false,
       },
     },
-  )
+  },
+  async (result) => {
+    const config = await loadConfig(result.flags.config, result.flags.set)
 
-  if (cli.flags.help) {
-    cli.showHelp()
-    process.exit(1)
-  }
+    if (result.flags.verbose) {
+      console.log('Loaded configuration:')
+      console.log(Bun.YAML.stringify(config, null, 2))
+    }
 
-  const config = await loadConfig(cli.flags.config, cli.flags.set)
+    await clearDir(config)
+    await prePackCommand(config)
+    await validate(config)
 
-  if (cli.flags.verbose) {
-    console.log('Loaded configuration:')
-    console.log(Bun.YAML.stringify(config, null, 2))
-  }
+    const cmds: Array<Promise<number>> = []
+    if (result.flags.source === 'all' || result.flags.source === 'npm') {
+      cmds.push(buildNpmPackages(config))
+    }
+    if (result.flags.source === 'all' || result.flags.source === 'pypi') {
+      cmds.push(buildPyPiPackages(config))
+    }
+    if (result.flags.source === 'all' || result.flags.source === 'github') {
+      cmds.push(buildGithubArchives(config))
+    }
 
-  await clearDir(config)
-  await prePackCommand(config)
-  await validate(config)
+    const results = await Promise.all(cmds)
 
-  const cmds: Array<Promise<number>> = []
-  if (cli.flags.source === 'all' || cli.flags.source === 'npm') {
-    cmds.push(buildNpmPackages(config))
-  }
-  if (cli.flags.source === 'all' || cli.flags.source === 'pypi') {
-    cmds.push(buildPyPiPackages(config))
-  }
-  if (cli.flags.source === 'all' || cli.flags.source === 'github') {
-    cmds.push(buildGithubArchives(config))
-  }
-
-  const results = await Promise.all(cmds)
-
-  process.exit(results.some((code) => code !== 0) ? 1 : 0)
-}
+    process.exit(results.some((code) => code !== 0) ? 1 : 0)
+  },
+)
