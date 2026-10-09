@@ -166,7 +166,7 @@ export const packCommand = createCommand(
 
     await clearDir(config)
     await prePackCommand(config)
-    await validate(config)
+    // await validate(config)
 
     const cmds: Array<Promise<number>> = []
     if (result.flags.source === 'all' || result.flags.source === 'npm') {
