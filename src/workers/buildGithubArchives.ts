@@ -53,9 +53,7 @@ function getFiles(config: Config, archiveId: string): FileDescriptor[] {
   if (typeof archiveConfig === 'string') {
     const relativeFilePath = config.binaries[archiveId]
     if (!relativeFilePath) {
-      throw new Error(
-        `Error building GitHub archive: No binary found for archiveId "${archiveId}". Please ensure "binaries" in your config includes a mapping for this archiveId.`,
-      )
+      return []
     }
 
     const absoluteFilePath = resolve(relativeFilePath)
@@ -87,6 +85,11 @@ export async function buildGithubArchive(
 
   try {
     console.log(building)
+    const files = getFiles(config, archiveId)
+    if (files.length === 0) {
+      console.log(`No files found for GitHub archive ${archiveName}`)
+      return 0
+    }
 
     const archiveConfig = config.github!.archives[archiveId]!
     const format =
@@ -94,7 +97,6 @@ export async function buildGithubArchive(
     const outputDir = await getPackOutputDir(config, 'github')
     const archivePath = resolve(outputDir, archiveName)
     const archive = createArchive(format, archivePath)
-    const files = getFiles(config, archiveId)
     await Promise.all(files.map((file) => addFileToArchive(archive, file)))
     await archive.end()
     console.log(`Finished ${building.toLowerCase()}`)
