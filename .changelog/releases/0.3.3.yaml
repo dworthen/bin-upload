@@ -1,0 +1,10 @@
+timestamp: 1791560880654
+version: 0.3.3
+changeTypes: 
+  - Fix
+changes: 
+  - type: Fix
+    timestamp: 1791560851968
+    sha: 87d1fa58cfc6edb2ca57929316a181e1934ab140
+    shortSha: 87d1fa5
+    description: Fix optional archiving
