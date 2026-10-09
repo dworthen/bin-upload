@@ -1,0 +1,10 @@
+timestamp: 1791556003002
+version: 0.3.1
+changeTypes: 
+  - Fix
+changes: 
+  - type: Fix
+    timestamp: 1791555982140
+    sha: 97f1127e19ea9897686316336eac0d92449f1c35
+    shortSha: 97f1127
+    description: Allow optional gh packing.
