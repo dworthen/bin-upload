@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import { Glob } from 'bun'
@@ -57,6 +58,9 @@ function getFiles(config: Config, archiveId: string): FileDescriptor[] {
     }
 
     const absoluteFilePath = resolve(relativeFilePath)
+    if (!existsSync(absoluteFilePath)) {
+      return []
+    }
     const cwd = dirname(absoluteFilePath)
     const pattern = basename(absoluteFilePath)
 
