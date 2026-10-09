@@ -1,0 +1,10 @@
+timestamp: 1791557340664
+version: 0.3.2
+changeTypes: 
+  - Fix
+changes: 
+  - type: Fix
+    timestamp: 1791557323654
+    sha: 322a9aef7f9aef33a0fc8c034a81c46e26b1fae9
+    shortSha: 322a9ae
+    description: Fix optional gh archiving
